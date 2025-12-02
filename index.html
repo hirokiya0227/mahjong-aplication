@@ -21,7 +21,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 100px;
+      margin-bottom: 10px;
       gap: 8px;
       font-size: 14px;
     }
@@ -78,12 +78,12 @@
       transform: translateX(-50%) rotate(0deg);
     }
     .seat-left {
-      left: -10px;
+      left: 4px;
       top: 50%;
       transform: translateY(-50%) rotate(90deg);
     }
     .seat-right {
-      right: -10px;
+      right: 4px;
       top: 50%;
       transform: translateY(-50%) rotate(-90deg);
     }
@@ -112,7 +112,7 @@
 
     /* 点数を大きく（約3倍） */
     .score {
-      font-size: 24px;
+      font-size: 48px;
       font-weight: bold;
       line-height: 1.1;
     }
@@ -242,6 +242,17 @@
     button.main-btn:active {
       opacity: 0.8;
     }
+    button.secondary-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      background: #ff9800;
+      color: white;
+      font-weight: bold;
+    }
+    button.secondary-btn:active {
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
@@ -363,8 +374,9 @@
         </label>
       </div>
 
-      <div class="field">
+      <div class="field" style="display:flex; gap:8px;">
         <button class="main-btn" id="applyBtn">点数を反映</button>
+        <button class="secondary-btn" id="undoBtn">1つ戻す</button>
       </div>
     </div>
   </div>
@@ -426,6 +438,7 @@
     const loserSelect = document.getElementById("loserSelect");
     const scoreSelect = document.getElementById("scoreSelect");
     const applyBtn = document.getElementById("applyBtn");
+    const undoBtn = document.getElementById("undoBtn");
     const logDiv = document.getElementById("log");
     const honbaMinusBtn = document.getElementById("honbaMinus");
     const honbaPlusBtn = document.getElementById("honbaPlus");
@@ -437,6 +450,57 @@
     const tenpaiCheckboxesDiv = document.getElementById("tenpaiCheckboxes");
     const ryuukyokuApplyBtn = document.getElementById("ryuukyokuApply");
     const ryuukyokuCancelBtn = document.getElementById("ryuukyokuCancel");
+
+    // 🔁 アンドゥ用履歴
+    let history = [];
+
+    function saveState() {
+      const state = {
+        players: JSON.parse(JSON.stringify(players)),
+        honba: honbaCount,
+        dealer: getDealerIndex(),
+        winnerIndex: winnerIndex,
+        logHtml: logDiv.innerHTML
+      };
+      history.push(state);
+    }
+
+    function restoreState() {
+      if (history.length === 0) return;
+      const prev = history.pop();
+
+      players = JSON.parse(JSON.stringify(prev.players));
+      honbaCount = prev.honba;
+      winnerIndex = prev.winnerIndex;
+
+      // 親復元
+      dealerRadios.forEach(r => r.checked = false);
+      const dealerRadio = document.querySelector(`.seat[data-index="${prev.dealer}"] .dealer-radio`);
+      if (dealerRadio) dealerRadio.checked = true;
+
+      // スコア表示更新
+      renderScores();
+
+      // 本場表示
+      honbaCountSpan.textContent = honbaCount;
+
+      // winnerハイライト復元
+      clearWinnerHighlight();
+      if (winnerIndex !== null && winnerIndex < playerCount) {
+        seats.forEach(seat => {
+          if (parseInt(seat.dataset.index, 10) === winnerIndex) {
+            seat.classList.add("winner");
+          }
+        });
+      }
+
+      // ログ復元
+      logDiv.innerHTML = prev.logHtml || "";
+
+      updateWinnerText();
+      updateScoreOptions();
+      updateLoserOptions();
+    }
 
     function initPlayers() {
       players = [];
@@ -660,10 +724,14 @@
       const payersCount = playerCount - 1;
       const perPayerHonba = (payersCount > 0) ? (totalHonbaBonus / payersCount) : 0;
 
+      // 🔁 この一局の変更前に状態を保存（アンドゥ用）
+      saveState();
+
       if (agariType === "ron") {
         const loserIdx = parseInt(loserSelect.value, 10);
         if (isNaN(loserIdx)) {
           alert("放銃者を選択してください。");
+          history.pop(); // セーブ取り消し
           return;
         }
         const base = scoreInfo.ron;
@@ -752,6 +820,9 @@
         return;
       }
 
+      // 🔁 流局精算前に状態保存
+      saveState();
+
       const total = 3000;
       const nTenpai = tenpaiIndices.length;
       const nNoten = playerCount - nTenpai;
@@ -812,6 +883,10 @@
 
     applyBtn.addEventListener("click", () => {
       applyScore();
+    });
+
+    undoBtn.addEventListener("click", () => {
+      restoreState();
     });
 
     honbaMinusBtn.addEventListener("click", () => {
