@@ -374,9 +374,10 @@
         </label>
       </div>
 
-      <div class="field" style="display:flex; gap:8px;">
+      <div class="field" style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="main-btn" id="applyBtn">点数を反映</button>
         <button class="secondary-btn" id="undoBtn">1つ戻す</button>
+        <button class="secondary-btn" id="redoBtn">1つ進む</button>
       </div>
     </div>
   </div>
@@ -439,6 +440,7 @@
     const scoreSelect = document.getElementById("scoreSelect");
     const applyBtn = document.getElementById("applyBtn");
     const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
     const logDiv = document.getElementById("log");
     const honbaMinusBtn = document.getElementById("honbaMinus");
     const honbaPlusBtn = document.getElementById("honbaPlus");
@@ -451,8 +453,9 @@
     const ryuukyokuApplyBtn = document.getElementById("ryuukyokuApply");
     const ryuukyokuCancelBtn = document.getElementById("ryuukyokuCancel");
 
-    // 🔁 アンドゥ用履歴
+    // 🔁 アンドゥ・リドゥ用履歴
     let history = [];
+    let future = [];
 
     function saveState() {
       const state = {
@@ -463,43 +466,77 @@
         logHtml: logDiv.innerHTML
       };
       history.push(state);
+      // 新しい操作が入ったので、進む側はクリア
+      future = [];
     }
 
-    function restoreState() {
-      if (history.length === 0) return;
-      const prev = history.pop();
-
-      players = JSON.parse(JSON.stringify(prev.players));
-      honbaCount = prev.honba;
-      winnerIndex = prev.winnerIndex;
+    function applyFullState(st) {
+      players = JSON.parse(JSON.stringify(st.players));
+      honbaCount = st.honba;
+      winnerIndex = st.winnerIndex;
 
       // 親復元
       dealerRadios.forEach(r => r.checked = false);
-      const dealerRadio = document.querySelector(`.seat[data-index="${prev.dealer}"] .dealer-radio`);
+      const dealerRadio = document.querySelector(
+        `.seat[data-index="${st.dealer}"] .dealer-radio`
+      );
       if (dealerRadio) dealerRadio.checked = true;
 
-      // スコア表示更新
+      // スコア更新
       renderScores();
 
       // 本場表示
       honbaCountSpan.textContent = honbaCount;
 
-      // winnerハイライト復元
+      // winner ハイライト
       clearWinnerHighlight();
       if (winnerIndex !== null && winnerIndex < playerCount) {
-        seats.forEach(seat => {
-          if (parseInt(seat.dataset.index, 10) === winnerIndex) {
-            seat.classList.add("winner");
-          }
-        });
+        const seat = document.querySelector(`.seat[data-index="${winnerIndex}"]`);
+        if (seat) seat.classList.add("winner");
       }
 
       // ログ復元
-      logDiv.innerHTML = prev.logHtml || "";
+      logDiv.innerHTML = st.logHtml || "";
 
       updateWinnerText();
       updateScoreOptions();
       updateLoserOptions();
+    }
+
+    function restoreState() {
+      if (history.length === 0) return;
+
+      // 今の状態を future へ（進む用）
+      const current = {
+        players: JSON.parse(JSON.stringify(players)),
+        honba: honbaCount,
+        dealer: getDealerIndex(),
+        winnerIndex: winnerIndex,
+        logHtml: logDiv.innerHTML
+      };
+      future.push(current);
+
+      // history から1つ戻す
+      const prev = history.pop();
+      applyFullState(prev);
+    }
+
+    function redoState() {
+      if (future.length === 0) return;
+
+      // 今の状態を history へ
+      const current = {
+        players: JSON.parse(JSON.stringify(players)),
+        honba: honbaCount,
+        dealer: getDealerIndex(),
+        winnerIndex: winnerIndex,
+        logHtml: logDiv.innerHTML
+      };
+      history.push(current);
+
+      // future から1つ進める
+      const next = future.pop();
+      applyFullState(next);
     }
 
     function initPlayers() {
@@ -887,6 +924,10 @@
 
     undoBtn.addEventListener("click", () => {
       restoreState();
+    });
+
+    redoBtn.addEventListener("click", () => {
+      redoState();
     });
 
     honbaMinusBtn.addEventListener("click", () => {
