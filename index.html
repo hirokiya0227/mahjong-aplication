@@ -21,7 +21,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 100px;
+      margin-bottom: 10px;
       gap: 8px;
       font-size: 14px;
     }
@@ -66,12 +66,7 @@
       box-shadow: 0 0 6px #ff5722aa;
     }
 
-    /* 4方向の位置＋ブロックの向き
-       上：180°反転
-       下：そのまま
-       左：左側から見た時に正面（90°）
-       右：右側から見た時に正面（-90°）
-    */
+    /* 4方向の位置＋ブロックの向き */
     .seat-top {
       top: 4px;
       left: 50%;
@@ -108,7 +103,7 @@
       font-weight: bold;
       font-size: 14px;
       white-space: nowrap;
-      display: none; /* ← 名前の重複表示を消す */
+      display: none; /* プルダウン下の名前は非表示 */
     }
 
     .dealer-label {
@@ -117,7 +112,7 @@
 
     /* 点数を大きく（約3倍） */
     .score {
-      font-size: 24px;
+      font-size: 48px;
       font-weight: bold;
       line-height: 1.1;
     }
@@ -147,10 +142,10 @@
       font-size: 11px;
     }
 
-    /* 流局ボタンを本場ボックスの下に独立配置 */
+    /* 流局ボタン（本場ボックスの下） */
     #ryuukyokuBtnBox {
       position: absolute;
-      top: calc(50% + 32px); /* 本場ボックスの少し下 */
+      top: calc(50% + 32px);
       left: 50%;
       transform: translate(-50%, 0);
       z-index: 5;
@@ -200,44 +195,16 @@
       margin-right: 4px;
     }
 
-    /* 入力パネル：卓の外側に出す（パネル全体を回転） */
+    /* 設定パネル：卓の下に固定（回転なし） */
     .input-panel {
-      position: absolute;
-      z-index: 10;
+      max-width: 420px;
+      margin: 0 auto 10px;
       background: #fff;
       border-radius: 12px;
       padding: 8px;
       box-shadow: 0 2px 4px #00000033;
       font-size: 14px;
-      width: 70%;
-      max-width: 320px;
       box-sizing: border-box;
-      transform-origin: center;
-    }
-    .panel-top {
-      bottom: 100%;
-      left: 50%;
-      transform: translate(-50%, -8px) rotate(180deg);
-    }
-    .panel-bottom {
-      top: 100%;
-      left: 50%;
-      transform: translate(-50%, 8px) rotate(0deg);
-    }
-    .panel-left {
-      right: 100%;
-      top: 50%;
-      transform: translate(-8px, -50%) rotate(90deg);
-    }
-    .panel-right {
-      left: 100%;
-      top: 50%;
-      transform: translate(8px, -50%) rotate(-90deg);
-    }
-
-    .input-inner {
-      transform-origin: center;
-      /* 中身は回転させず、パネル全体を回転させる方式に変更 */
     }
 
     .field {
@@ -368,36 +335,36 @@
         </div>
         <div class="score" data-score-index="3">25000</div>
       </div>
+    </div>
+  </div>
 
-      <!-- 設定パネル（卓の外側に出る。向きも各プレイヤー視点で「下」に） -->
-      <div class="input-panel panel-bottom" id="inputPanel">
-        <div class="input-inner">
-          <div id="winnerDisplay">上がったプレイヤーを卓からタップしてください。</div>
+  <!-- 卓の下に固定の設定パネル（全プレイヤー共通） -->
+  <div class="input-panel" id="inputPanel">
+    <div class="input-inner">
+      <div id="winnerDisplay">上がったプレイヤーを卓からタップしてください。</div>
 
-          <div class="field">
-            <span>上がりタイプ：</span>
-            <label><input type="radio" name="agariType" value="tsumo" checked>ツモ</label>
-            <label><input type="radio" name="agariType" value="ron">ロン</label>
-          </div>
+      <div class="field">
+        <span>上がりタイプ：</span>
+        <label><input type="radio" name="agariType" value="tsumo" checked>ツモ</label>
+        <label><input type="radio" name="agariType" value="ron">ロン</label>
+      </div>
 
-          <div class="field" id="loserField" style="display:none;">
-            <label>放銃者：
-              <select id="loserSelect"></select>
-            </label>
-          </div>
+      <div class="field" id="loserField" style="display:none;">
+        <label>放銃者：
+          <select id="loserSelect"></select>
+        </label>
+      </div>
 
-          <div class="field">
-            <label>点数（子 / 親）：
-              <select id="scoreSelect">
-                <option value="">上がりプレイヤーと親を選ぶと候補が出ます</option>
-              </select>
-            </label>
-          </div>
+      <div class="field">
+        <label>点数（子 / 親）：
+          <select id="scoreSelect">
+            <option value="">上がりプレイヤーと親を選ぶと候補が出ます</option>
+          </select>
+        </label>
+      </div>
 
-          <div class="field">
-            <button class="main-btn" id="applyBtn">点数を反映</button>
-          </div>
-        </div>
+      <div class="field">
+        <button class="main-btn" id="applyBtn">点数を反映</button>
       </div>
     </div>
   </div>
@@ -464,7 +431,6 @@
     const honbaPlusBtn = document.getElementById("honbaPlus");
     const honbaResetBtn = document.getElementById("honbaReset");
     const honbaCountSpan = document.getElementById("honbaCount");
-    const inputPanel = document.getElementById("inputPanel");
 
     const ryuukyokuBtn = document.getElementById("ryuukyokuBtn");
     const ryuukyokuPanel = document.getElementById("ryuukyokuPanel");
@@ -550,7 +516,6 @@
       updateWinnerText();
       updateLoserOptions();
       updateScoreOptions();
-      updatePanelPosition();
     }
 
     function clearWinnerHighlight() {
@@ -569,17 +534,6 @@
       updateWinnerText();
       updateLoserOptions();
       updateScoreOptions();
-      updatePanelPosition();
-    }
-
-    function updatePanelPosition() {
-      inputPanel.classList.remove("panel-top", "panel-bottom", "panel-left", "panel-right");
-      let cls = "panel-bottom"; // デフォルト南家
-      if (winnerIndex === 0) cls = "panel-top";
-      else if (winnerIndex === 1) cls = "panel-right";
-      else if (winnerIndex === 2 || winnerIndex === null) cls = "panel-bottom";
-      else if (winnerIndex === 3) cls = "panel-left";
-      inputPanel.classList.add(cls);
     }
 
     function updateWinnerText() {
@@ -793,7 +747,6 @@
       });
 
       if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
-        // 全員ノーテン or 全員テンパイ → 点数移動なし
         addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
         closeRyuukyokuPanel();
         return;
@@ -806,7 +759,6 @@
       const gainPerTenpai = Math.floor(total / nTenpai);
       const lossPerNoten = Math.floor(total / nNoten);
 
-      // ノーテン者一覧
       const notenIndices = [];
       for (let i = 0; i < playerCount; i++) {
         if (!tenpaiIndices.includes(i)) notenIndices.push(i);
@@ -899,7 +851,6 @@
     updateWinnerText();
     updateLoserOptions();
     updateScoreOptions();
-    updatePanelPosition();
   </script>
 </body>
 </html>
