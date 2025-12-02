@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>麻雀点数ボード</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 10px;
+        box-sizing: border-box;
+        background: #f5f5f5;
+      }
+      h1 {
+        font-size: 18px;
+        text-align: center;
+        margin: 0 0 10px;
+      }
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 8px;
+        font-size: 14px;
+      }
+      select,
+      button,
+      input[type="radio"] {
+        font-size: 14px;
+      }
+
+      #boardWrapper {
+        position: relative;
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto 10px;
+      }
+
+      #table {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        position: relative;
+        background: #e0e0e0;
+        border-radius: 16px;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+
+      .seat {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 90px;
+        padding: 4px;
+        box-sizing: border-box;
+        background: #ffffffdd;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        transform-origin: center;
+      }
+      .seat.winner {
+        border-color: #ff5722;
+        box-shadow: 0 0 6px #ff5722aa;
+      }
+
+      /* 4方向の位置＋ブロックの向き
+       上：180°反転
+       下：そのまま
+       左：左側から見た時に正面（90°）
+       右：右側から見た時に正面（-90°）
+    */
+      .seat-top {
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%) rotate(180deg);
+      }
+      .seat-bottom {
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%) rotate(0deg);
+      }
+      .seat-left {
+        left: 4px;
+        top: 50%;
+        transform: translateY(-50%) rotate(90deg);
+      }
+      .seat-right {
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%) rotate(-90deg);
+      }
+
+      .player-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        margin-bottom: 4px;
+      }
+      .player-header select {
+        max-width: 110px;
+      }
+
+      .name-view {
+        font-weight: bold;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+
+      .dealer-label {
+        font-size: 12px;
+      }
+      .score {
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      /* 本場コントローラ（卓中央） */
+      #centerHonba {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #ffffffee;
+        border-radius: 10px;
+        padding: 4px 8px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid #ccc;
+      }
+      #centerHonba button {
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: #eee;
+        color: #333;
+        font-size: 11px;
+      }
+
+      /* 入力パネルは卓の下に固定 */
+      .input-panel {
+        max-width: 420px;
+        margin: 0 auto 10px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 8px;
+        box-shadow: 0 2px 4px #00000033;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      /* 設定ブロックの向き：上/下/左/右ごとに回転 */
+      .input-inner {
+        transform-origin: center;
+      }
+      .input-panel.orient-top .input-inner {
+        transform: rotate(180deg);
+      }
+      .input-panel.orient-bottom .input-inner {
+        transform: rotate(0deg);
+      }
+      .input-panel.orient-left .input-inner {
+        transform: rotate(90deg);
+      }
+      .input-panel.orient-right .input-inner {
+        transform: rotate(-90deg);
+      }
+
+      .field {
+        margin-bottom: 6px;
+      }
+      .field label {
+        margin-right: 8px;
+      }
+      #winnerDisplay {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+
+      #log {
+        max-width: 420px;
+        margin: 0 auto;
+        max-height: 120px;
+        overflow-y: auto;
+        font-size: 11px;
+        border-top: 1px solid #ddd;
+        padding-top: 4px;
+      }
+      #log div {
+        margin-bottom: 2px;
+      }
+
+      button.main-btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        background: #4caf50;
+        color: white;
+        font-weight: bold;
+      }
+      button.main-btn:active {
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>麻雀点数ボード</h1>
+
+    <div class="controls">
+      <div>
+        人数：
+        <select id="playerCount">
+          <option value="4">4人</option>
+          <option value="3">3人</option>
+        </select>
+      </div>
+      <div>※卓のプレイヤーをタップして「上がり」を選択</div>
+    </div>
+
+    <div id="boardWrapper">
+      <div id="table">
+        <!-- 本場コントローラ（卓中央） -->
+        <div id="centerHonba">
+          <span>本場</span>
+          <button type="button" id="honbaMinus">−</button>
+          <span id="honbaCount">0</span><span>本</span>
+          <button type="button" id="honbaPlus">＋</button>
+          <button type="button" id="honbaReset">リセット</button>
+        </div>
+
+        <!-- 0: 上 -->
+        <div class="seat seat-top" data-index="0">
+          <div class="player-header">
+            <select class="name-select"></select>
+            <div class="name-view"></div>
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio" />
+              親
+            </label>
+          </div>
+          <div class="score" data-score-index="0">25000</div>
+        </div>
+
+        <!-- 1: 右 -->
+        <div class="seat seat-right" data-index="1">
+          <div class="player-header">
+            <select class="name-select"></select>
+            <div class="name-view"></div>
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio" />
+              親
+            </label>
+          </div>
+          <div class="score" data-score-index="1">25000</div>
+        </div>
+
+        <!-- 2: 下 -->
+        <div class="seat seat-bottom" data-index="2">
+          <div class="player-header">
+            <select class="name-select"></select>
+            <div class="name-view"></div>
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio" checked />
+              親
+            </label>
+          </div>
+          <div class="score" data-score-index="2">25000</div>
+        </div>
+
+        <!-- 3: 左（3人のときは非表示） -->
+        <div class="seat seat-left" data-index="3">
+          <div class="player-header">
+            <select class="name-select"></select>
+            <div class="name-view"></div>
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio" />
+              親
+            </label>
+          </div>
+          <div class="score" data-score-index="3">25000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卓とは別に、下に固定の入力パネル（勝った人の向きに合わせて回転） -->
+    <div class="input-panel orient-bottom" id="inputPanel">
+      <div class="input-inner">
+        <div id="winnerDisplay">
+          上がったプレイヤーを卓からタップしてください。
+        </div>
+
+        <div class="field">
+          <span>上がりタイプ：</span>
+          <label
+            ><input
+              type="radio"
+              name="agariType"
+              value="tsumo"
+              checked
+            />ツモ</label
+          >
+          <label><input type="radio" name="agariType" value="ron" />ロン</label>
+        </div>
+
+        <div class="field" id="loserField" style="display: none">
+          <label
+            >放銃者：
+            <select id="loserSelect"></select>
+          </label>
+        </div>
+
+        <div class="field">
+          <label
+            >点数（子 / 親）：
+            <select id="scoreSelect">
+              <option value="">上がりプレイヤーと親を選ぶと候補が出ます</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field">
+          <button class="main-btn" id="applyBtn">点数を反映</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="log"></div>
+
+    <script>
+      const NAME_OPTIONS = [
+        "ゆうあ",
+        "ひろき",
+        "ユウタ",
+        "まさき",
+        "しんご",
+        "しんちゃん",
+        "しゅうじろう",
+        "たかし",
+      ];
+
+      const INITIAL_POINTS = 25000;
+
+      const CHILD_SCORES = [
+        {
+          id: "c1",
+          label: "1000 (ツモ: 子200 / 親600)",
+          ron: 1000,
+          tsumoChild: 200,
+          tsumoParent: 600,
+        },
+        {
+          id: "c2",
+          label: "2000 (ツモ: 子500 / 親1000)",
+          ron: 2000,
+          tsumoChild: 500,
+          tsumoParent: 1000,
+        },
+        {
+          id: "c3",
+          label: "3900 (ツモ: 子1000 / 親2000)",
+          ron: 3900,
+          tsumoChild: 1000,
+          tsumoParent: 2000,
+        },
+        {
+          id: "c4",
+          label: "8000 (ツモ: 子2000 / 親4000)",
+          ron: 8000,
+          tsumoChild: 2000,
+          tsumoParent: 4000,
+        },
+        {
+          id: "c5",
+          label: "12000 (ツモ: 子3000 / 親6000)",
+          ron: 12000,
+          tsumoChild: 3000,
+          tsumoParent: 6000,
+        },
+        {
+          id: "c6",
+          label: "16000 (ツモ: 子4000 / 親8000)",
+          ron: 16000,
+          tsumoChild: 4000,
+          tsumoParent: 8000,
+        },
+        {
+          id: "c7",
+          label: "24000 (ツモ: 子6000 / 親12000)",
+          ron: 24000,
+          tsumoChild: 6000,
+          tsumoParent: 12000,
+        },
+        {
+          id: "c8",
+          label: "32000 (ツモ: 子8000 / 親16000)",
+          ron: 32000,
+          tsumoChild: 8000,
+          tsumoParent: 16000,
+        },
+        {
+          id: "c9",
+          label: "64000 (ツモ: 子16000 / 親32000)",
+          ron: 64000,
+          tsumoChild: 16000,
+          tsumoParent: 32000,
+        },
+      ];
+
+      const PARENT_SCORES = [
+        { id: "p1", label: "2000 (ツモ: 700オール)", ron: 2000, tsumoAll: 700 },
+        {
+          id: "p2",
+          label: "3900 (ツモ: 1300オール)",
+          ron: 3900,
+          tsumoAll: 1300,
+        },
+        {
+          id: "p3",
+          label: "5800 (ツモ: 2000オール)",
+          ron: 5800,
+          tsumoAll: 2000,
+        },
+        {
+          id: "p4",
+          label: "12000 (ツモ: 4000オール)",
+          ron: 12000,
+          tsumoAll: 4000,
+        },
+        {
+          id: "p5",
+          label: "18000 (ツモ: 6000オール)",
+          ron: 18000,
+          tsumoAll: 6000,
+        },
+        {
+          id: "p6",
+          label: "24000 (ツモ: 8000オール)",
+          ron: 24000,
+          tsumoAll: 8000,
+        },
+        {
+          id: "p7",
+          label: "36000 (ツモ: 12000オール)",
+          ron: 36000,
+          tsumoAll: 12000,
+        },
+        {
+          id: "p8",
+          label: "48000 (ツモ: 16000オール)",
+          ron: 48000,
+          tsumoAll: 16000,
+        },
+        {
+          id: "p9",
+          label: "96000 (ツモ: 32000オール)",
+          ron: 96000,
+          tsumoAll: 32000,
+        },
+      ];
+
+      let playerCount = 4;
+      let players = [];
+      let winnerIndex = null;
+      let honbaCount = 0;
+
+      const playerCountSelect = document.getElementById("playerCount");
+      const seats = document.querySelectorAll(".seat");
+      const nameSelects = document.querySelectorAll(".name-select");
+      const nameViews = document.querySelectorAll(".name-view");
+      const dealerRadios = document.querySelectorAll(".dealer-radio");
+      const scoreElems = document.querySelectorAll(".score");
+      const winnerDisplay = document.getElementById("winnerDisplay");
+      const agariTypeRadios = document.querySelectorAll(
+        "input[name='agariType']"
+      );
+      const loserField = document.getElementById("loserField");
+      const loserSelect = document.getElementById("loserSelect");
+      const scoreSelect = document.getElementById("scoreSelect");
+      const applyBtn = document.getElementById("applyBtn");
+      const logDiv = document.getElementById("log");
+      const honbaMinusBtn = document.getElementById("honbaMinus");
+      const honbaPlusBtn = document.getElementById("honbaPlus");
+      const honbaResetBtn = document.getElementById("honbaReset");
+      const honbaCountSpan = document.getElementById("honbaCount");
+      const inputPanel = document.getElementById("inputPanel");
+      const inputInner = document.querySelector(".input-inner");
+
+      function initPlayers() {
+        players = [];
+        for (let i = 0; i < 4; i++) {
+          players.push({
+            name: NAME_OPTIONS[i] || `プレイヤー${i + 1}`,
+            score: INITIAL_POINTS,
+          });
+        }
+        players.forEach((p, i) => {
+          scoreElems[i].textContent = p.score;
+        });
+      }
+
+      function initNameSelects() {
+        nameSelects.forEach((sel, i) => {
+          sel.innerHTML = "";
+          NAME_OPTIONS.forEach((name) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            sel.appendChild(opt);
+          });
+          sel.value = players[i].name;
+          nameViews[i].textContent = players[i].name;
+
+          // iPhoneで座席クリックに食われないようにする
+          const stop = (e) => e.stopPropagation();
+          sel.addEventListener("click", stop);
+          sel.addEventListener("touchstart", stop);
+          sel.addEventListener("mousedown", stop);
+
+          sel.addEventListener("change", () => {
+            players[i].name = sel.value;
+            nameViews[i].textContent = sel.value;
+            updateWinnerText();
+            updateLoserOptions();
+          });
+        });
+      }
+
+      function getDealerIndex() {
+        for (let i = 0; i < dealerRadios.length; i++) {
+          if (dealerRadios[i].checked) {
+            const seat = dealerRadios[i].closest(".seat");
+            if (!seat) continue;
+            const idx = parseInt(seat.dataset.index, 10);
+            if (idx < playerCount) return idx;
+          }
+        }
+        return 0;
+      }
+
+      function updatePlayerCount() {
+        playerCount = parseInt(playerCountSelect.value, 10);
+        seats.forEach((seat, idx) => {
+          if (idx < playerCount) {
+            seat.style.display = "flex";
+          } else {
+            seat.style.display = "none";
+            const radio = seat.querySelector(".dealer-radio");
+            if (radio) radio.checked = false;
+          }
+        });
+        const dealerIdx = getDealerIndex();
+        if (dealerIdx >= playerCount) {
+          dealerRadios[0].checked = true;
+        }
+        if (winnerIndex !== null && winnerIndex >= playerCount) {
+          winnerIndex = null;
+        }
+        clearWinnerHighlight();
+        updateWinnerText();
+        updateLoserOptions();
+        updateScoreOptions();
+        updatePanelOrientation();
+      }
+
+      function clearWinnerHighlight() {
+        seats.forEach((seat) => seat.classList.remove("winner"));
+      }
+
+      function setWinner(index) {
+        if (index >= playerCount) return;
+        winnerIndex = index;
+        clearWinnerHighlight();
+        seats.forEach((seat) => {
+          if (parseInt(seat.dataset.index, 10) === index) {
+            seat.classList.add("winner");
+          }
+        });
+        updateWinnerText();
+        updateLoserOptions();
+        updateScoreOptions();
+        updatePanelOrientation();
+      }
+
+      function updatePanelOrientation() {
+        inputPanel.classList.remove(
+          "orient-top",
+          "orient-bottom",
+          "orient-left",
+          "orient-right"
+        );
+        let cls = "orient-bottom"; // デフォルトは南家視点
+        if (winnerIndex === 0) cls = "orient-top";
+        else if (winnerIndex === 1) cls = "orient-right";
+        else if (winnerIndex === 2) cls = "orient-bottom";
+        else if (winnerIndex === 3) cls = "orient-left";
+        inputPanel.classList.add(cls);
+      }
+
+      function updateWinnerText() {
+        if (winnerIndex === null) {
+          winnerDisplay.textContent =
+            "上がったプレイヤーを卓からタップしてください。";
+        } else {
+          const dealerIdx = getDealerIndex();
+          const isDealer = dealerIdx === winnerIndex;
+          winnerDisplay.textContent = `上がり：${players[winnerIndex].name}（${
+            isDealer ? "親" : "子"
+          }） / 本場：${honbaCount}本`;
+        }
+      }
+
+      function getCurrentAgariType() {
+        let val = "tsumo";
+        agariTypeRadios.forEach((r) => {
+          if (r.checked) val = r.value;
+        });
+        return val;
+      }
+
+      function updateLoserOptions() {
+        const agariType = getCurrentAgariType();
+        if (agariType === "ron" && winnerIndex !== null) {
+          loserField.style.display = "block";
+          loserSelect.innerHTML = "";
+          for (let i = 0; i < playerCount; i++) {
+            if (i === winnerIndex) continue;
+            const opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = players[i].name;
+            loserSelect.appendChild(opt);
+          }
+        } else {
+          loserField.style.display = "none";
+          loserSelect.innerHTML = "";
+        }
+      }
+
+      function getScoreListForWinner() {
+        if (winnerIndex === null) return [];
+        const dealerIdx = getDealerIndex();
+        const isDealer = dealerIdx === winnerIndex;
+        return isDealer ? PARENT_SCORES : CHILD_SCORES;
+      }
+
+      function updateScoreOptions() {
+        const list = getScoreListForWinner();
+        scoreSelect.innerHTML = "";
+        if (!list.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "上がりプレイヤーと親を選んでください";
+          scoreSelect.appendChild(opt);
+          return;
+        }
+        const opt0 = document.createElement("option");
+        opt0.value = "";
+        opt0.textContent = "点数を選択してください";
+        scoreSelect.appendChild(opt0);
+
+        const dealerIdx = getDealerIndex();
+        const isDealer = dealerIdx === winnerIndex;
+
+        if (!isDealer) {
+          const group = document.createElement("optgroup");
+          group.label = "子のあがり";
+          CHILD_SCORES.forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.label;
+            group.appendChild(opt);
+          });
+          scoreSelect.appendChild(group);
+        } else {
+          const group = document.createElement("optgroup");
+          group.label = "親のあがり";
+          PARENT_SCORES.forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.label;
+            group.appendChild(opt);
+          });
+          scoreSelect.appendChild(group);
+        }
+      }
+
+      function findScoreById(id) {
+        let s = CHILD_SCORES.find((x) => x.id === id);
+        if (s) return s;
+        return PARENT_SCORES.find((x) => x.id === id);
+      }
+
+      function renderScores() {
+        for (let i = 0; i < 4; i++) {
+          scoreElems[i].textContent = players[i].score;
+        }
+      }
+
+      function addLog(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        logDiv.prepend(div);
+      }
+
+      function applyScore() {
+        if (winnerIndex === null) {
+          alert("先に上がりプレイヤーを卓からタップしてください。");
+          return;
+        }
+        const scoreId = scoreSelect.value;
+        if (!scoreId) {
+          alert("点数を選択してください。");
+          return;
+        }
+        const agariType = getCurrentAgariType();
+        const scoreInfo = findScoreById(scoreId);
+        if (!scoreInfo) return;
+
+        const dealerIdx = getDealerIndex();
+        const isDealerWin = dealerIdx === winnerIndex;
+
+        const totalHonbaBonus = honbaCount * 300;
+        const payersCount = playerCount - 1;
+        const perPayerHonba =
+          payersCount > 0 ? totalHonbaBonus / payersCount : 0;
+
+        if (agariType === "ron") {
+          const loserIdx = parseInt(loserSelect.value, 10);
+          if (isNaN(loserIdx)) {
+            alert("放銃者を選択してください。");
+            return;
+          }
+          const base = scoreInfo.ron;
+          const delta = base + totalHonbaBonus;
+          players[winnerIndex].score += delta;
+          players[loserIdx].score -= delta;
+
+          let logText = `ロン：${players[winnerIndex].name} +${delta} / ${players[loserIdx].name} -${delta}（基本${base}`;
+          if (honbaCount > 0)
+            logText += ` + 本場${honbaCount}本で${totalHonbaBonus}`;
+          logText += "）";
+          addLog(logText);
+        } else {
+          if (isDealerWin) {
+            let gain = 0;
+            for (let i = 0; i < playerCount; i++) {
+              if (i === winnerIndex) continue;
+              const basePay = scoreInfo.tsumoAll;
+              const pay = basePay + perPayerHonba;
+              players[i].score -= pay;
+              gain += pay;
+            }
+            players[winnerIndex].score += gain;
+
+            let logText = `親ツモ：${players[winnerIndex].name} +${gain}（子${
+              playerCount - 1
+            }人 × 基本${scoreInfo.tsumoAll}`;
+            if (honbaCount > 0)
+              logText += ` + 本場${honbaCount}本分 合計${totalHonbaBonus}`;
+            logText += "）";
+            addLog(logText);
+          } else {
+            let gain = 0;
+            for (let i = 0; i < playerCount; i++) {
+              if (i === winnerIndex) continue;
+              let basePay;
+              if (i === dealerIdx) {
+                basePay = scoreInfo.tsumoParent;
+              } else {
+                basePay = scoreInfo.tsumoChild;
+              }
+              const pay = basePay + perPayerHonba;
+              players[i].score -= pay;
+              gain += pay;
+            }
+            players[winnerIndex].score += gain;
+
+            let logText = `子ツモ：${players[winnerIndex].name} +${gain}（親/子から基本支払い`;
+            if (honbaCount > 0)
+              logText += ` + 本場${honbaCount}本分 合計${totalHonbaBonus}`;
+            logText += "）";
+            addLog(logText);
+          }
+        }
+
+        renderScores();
+      }
+
+      // ▼ イベント設定
+      seats.forEach((seat) => {
+        seat.addEventListener("click", () => {
+          const idx = parseInt(seat.dataset.index, 10);
+          setWinner(idx);
+        });
+      });
+
+      dealerRadios.forEach((radio) => {
+        const stop = (e) => e.stopPropagation();
+        radio.addEventListener("click", stop);
+        radio.addEventListener("touchstart", stop);
+        radio.addEventListener("mousedown", stop);
+
+        radio.addEventListener("change", () => {
+          updateWinnerText();
+          updateScoreOptions();
+        });
+      });
+
+      agariTypeRadios.forEach((radio) => {
+        radio.addEventListener("change", () => {
+          updateLoserOptions();
+        });
+      });
+
+      playerCountSelect.addEventListener("change", () => {
+        updatePlayerCount();
+      });
+
+      applyBtn.addEventListener("click", () => {
+        applyScore();
+      });
+
+      honbaMinusBtn.addEventListener("click", () => {
+        if (honbaCount > 0) {
+          honbaCount--;
+          honbaCountSpan.textContent = honbaCount;
+          updateWinnerText();
+        }
+      });
+
+      honbaPlusBtn.addEventListener("click", () => {
+        honbaCount++;
+        honbaCountSpan.textContent = honbaCount;
+        updateWinnerText();
+      });
+
+      honbaResetBtn.addEventListener("click", () => {
+        honbaCount = 0;
+        honbaCountSpan.textContent = honbaCount;
+        updateWinnerText();
+      });
+
+      // 初期化
+      initPlayers();
+      initNameSelects();
+      updatePlayerCount();
+      updateWinnerText();
+      updateLoserOptions();
+      updateScoreOptions();
+      updatePanelOrientation();
+    </script>
+  </body>
+</html>
