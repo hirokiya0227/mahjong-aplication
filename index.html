@@ -52,8 +52,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 90px;
-      padding: 4px;
+      min-width: 110px;
+      padding: 8px;
       box-sizing: border-box;
       background: #ffffffdd;
       border-radius: 8px;
@@ -108,14 +108,18 @@
       font-weight: bold;
       font-size: 14px;
       white-space: nowrap;
+      display: none; /* ← 名前の重複表示を消す */
     }
 
     .dealer-label {
       font-size: 12px;
     }
+
+    /* 点数を大きく（約3倍） */
     .score {
-      font-size: 16px;
+      font-size: 48px;
       font-weight: bold;
+      line-height: 1.1;
     }
 
     /* 本場コントローラ（卓中央） */
@@ -141,6 +145,23 @@
       background: #eee;
       color: #333;
       font-size: 11px;
+    }
+
+    /* 流局ボタンを本場ボックスの下に独立配置 */
+    #ryuukyokuBtnBox {
+      position: absolute;
+      top: calc(50% + 32px); /* 本場ボックスの少し下 */
+      left: 50%;
+      transform: translate(-50%, 0);
+      z-index: 5;
+    }
+    #ryuukyokuBtnBox button {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #eee;
+      color: #333;
+      font-size: 12px;
     }
 
     /* 流局パネル */
@@ -179,7 +200,7 @@
       margin-right: 4px;
     }
 
-    /* 入力パネル：卓の外側に出す（位置＋向きはクラスで切り替え） */
+    /* 入力パネル：卓の外側に出す（パネル全体を回転） */
     .input-panel {
       position: absolute;
       z-index: 10;
@@ -191,43 +212,32 @@
       width: 70%;
       max-width: 320px;
       box-sizing: border-box;
+      transform-origin: center;
     }
     .panel-top {
       bottom: 100%;
       left: 50%;
-      transform: translate(-50%, -8px);
+      transform: translate(-50%, -8px) rotate(180deg);
     }
     .panel-bottom {
       top: 100%;
       left: 50%;
-      transform: translate(-50%, 8px);
+      transform: translate(-50%, 8px) rotate(0deg);
     }
     .panel-left {
       right: 100%;
       top: 50%;
-      transform: translate(-8px, -50%);
+      transform: translate(-8px, -50%) rotate(90deg);
     }
     .panel-right {
       left: 100%;
       top: 50%;
-      transform: translate(8px, -50%);
+      transform: translate(8px, -50%) rotate(-90deg);
     }
 
     .input-inner {
       transform-origin: center;
-    }
-    /* プレイヤーから見て「下側」に来るように中身を回転 */
-    .panel-top .input-inner {
-      transform: rotate(180deg);  /* 上家から見て下に表示 */
-    }
-    .panel-bottom .input-inner {
-      transform: rotate(0deg);    /* 南家から見て下に表示 */
-    }
-    .panel-left .input-inner {
-      transform: rotate(90deg);   /* 左家から見て下に表示 */
-    }
-    .panel-right .input-inner {
-      transform: rotate(-90deg);  /* 右家から見て下に表示 */
+      /* 中身は回転させず、パネル全体を回転させる方式に変更 */
     }
 
     .field {
@@ -290,6 +300,10 @@
         <span id="honbaCount">0</span><span>本</span>
         <button type="button" id="honbaPlus">＋</button>
         <button type="button" id="honbaReset">リセット</button>
+      </div>
+
+      <!-- 流局ボタン（本場ボックスの下） -->
+      <div id="ryuukyokuBtnBox">
         <button type="button" id="ryuukyokuBtn">流局</button>
       </div>
 
@@ -355,7 +369,7 @@
         <div class="score" data-score-index="3">25000</div>
       </div>
 
-      <!-- 設定パネル（卓の外側に出る） -->
+      <!-- 設定パネル（卓の外側に出る。向きも各プレイヤー視点で「下」に） -->
       <div class="input-panel panel-bottom" id="inputPanel">
         <div class="input-inner">
           <div id="winnerDisplay">上がったプレイヤーを卓からタップしてください。</div>
@@ -451,7 +465,6 @@
     const honbaResetBtn = document.getElementById("honbaReset");
     const honbaCountSpan = document.getElementById("honbaCount");
     const inputPanel = document.getElementById("inputPanel");
-    const inputInner = document.querySelector(".input-inner");
 
     const ryuukyokuBtn = document.getElementById("ryuukyokuBtn");
     const ryuukyokuPanel = document.getElementById("ryuukyokuPanel");
@@ -482,7 +495,9 @@
           sel.appendChild(opt);
         });
         sel.value = players[i].name;
-        nameViews[i].textContent = players[i].name;
+        if (nameViews[i]) {
+          nameViews[i].textContent = players[i].name;
+        }
 
         // iPhoneで座席クリックに食われないようにする
         const stop = (e) => e.stopPropagation();
@@ -492,7 +507,9 @@
 
         sel.addEventListener("change", () => {
           players[i].name = sel.value;
-          nameViews[i].textContent = sel.value;
+          if (nameViews[i]) {
+            nameViews[i].textContent = sel.value;
+          }
           updateWinnerText();
           updateLoserOptions();
         });
