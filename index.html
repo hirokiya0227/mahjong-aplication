@@ -132,6 +132,7 @@
       align-items: center;
       gap: 4px;
       border: 1px solid #ccc;
+      z-index: 5;
     }
     #centerHonba button {
       padding: 2px 6px;
@@ -142,33 +143,91 @@
       font-size: 11px;
     }
 
-    /* 入力パネルは卓の下に固定 */
+    /* 流局パネル */
+    #ryuukyokuPanel {
+      position: absolute;
+      left: 50%;
+      top: 60%;
+      transform: translate(-50%, 0);
+      background: #ffffffee;
+      border-radius: 10px;
+      padding: 6px 8px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      z-index: 6;
+      display: none;
+      max-width: 90%;
+      box-sizing: border-box;
+    }
+    #ryuukyokuPanel h3 {
+      margin: 0 0 4px;
+      font-size: 13px;
+    }
+    #tenpaiCheckboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      margin-bottom: 4px;
+    }
+    #ryuukyokuPanel button {
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #eee;
+      color: #333;
+      font-size: 11px;
+      margin-right: 4px;
+    }
+
+    /* 入力パネル：卓の外側に出す（位置＋向きはクラスで切り替え） */
     .input-panel {
-      max-width: 420px;
-      margin: 0 auto 10px;
+      position: absolute;
+      z-index: 10;
       background: #fff;
       border-radius: 12px;
       padding: 8px;
       box-shadow: 0 2px 4px #00000033;
       font-size: 14px;
+      width: 70%;
+      max-width: 320px;
       box-sizing: border-box;
     }
+    .panel-top {
+      bottom: 100%;
+      left: 50%;
+      transform: translate(-50%, -8px);
+    }
+    .panel-bottom {
+      top: 100%;
+      left: 50%;
+      transform: translate(-50%, 8px);
+    }
+    .panel-left {
+      right: 100%;
+      top: 50%;
+      transform: translate(-8px, -50%);
+    }
+    .panel-right {
+      left: 100%;
+      top: 50%;
+      transform: translate(8px, -50%);
+    }
 
-    /* 設定ブロックの向き：上/下/左/右ごとに回転 */
     .input-inner {
       transform-origin: center;
     }
-    .input-panel.orient-top .input-inner {
-      transform: rotate(180deg);
+    /* プレイヤーから見て「下側」に来るように中身を回転 */
+    .panel-top .input-inner {
+      transform: rotate(180deg);  /* 上家から見て下に表示 */
     }
-    .input-panel.orient-bottom .input-inner {
-      transform: rotate(0deg);
+    .panel-bottom .input-inner {
+      transform: rotate(0deg);    /* 南家から見て下に表示 */
     }
-    .input-panel.orient-left .input-inner {
-      transform: rotate(90deg);
+    .panel-left .input-inner {
+      transform: rotate(90deg);   /* 左家から見て下に表示 */
     }
-    .input-panel.orient-right .input-inner {
-      transform: rotate(-90deg);
+    .panel-right .input-inner {
+      transform: rotate(-90deg);  /* 右家から見て下に表示 */
     }
 
     .field {
@@ -231,6 +290,17 @@
         <span id="honbaCount">0</span><span>本</span>
         <button type="button" id="honbaPlus">＋</button>
         <button type="button" id="honbaReset">リセット</button>
+        <button type="button" id="ryuukyokuBtn">流局</button>
+      </div>
+
+      <!-- 流局用パネル -->
+      <div id="ryuukyokuPanel">
+        <h3>流局：テンパイしている人を選択</h3>
+        <div id="tenpaiCheckboxes"></div>
+        <div>
+          <button type="button" id="ryuukyokuApply">点数精算</button>
+          <button type="button" id="ryuukyokuCancel">キャンセル</button>
+        </div>
       </div>
 
       <!-- 0: 上 -->
@@ -284,36 +354,36 @@
         </div>
         <div class="score" data-score-index="3">25000</div>
       </div>
-    </div>
-  </div>
 
-  <!-- 卓とは別に、下に固定の入力パネル（勝った人の向きに合わせて回転） -->
-  <div class="input-panel orient-bottom" id="inputPanel">
-    <div class="input-inner">
-      <div id="winnerDisplay">上がったプレイヤーを卓からタップしてください。</div>
+      <!-- 設定パネル（卓の外側に出る） -->
+      <div class="input-panel panel-bottom" id="inputPanel">
+        <div class="input-inner">
+          <div id="winnerDisplay">上がったプレイヤーを卓からタップしてください。</div>
 
-      <div class="field">
-        <span>上がりタイプ：</span>
-        <label><input type="radio" name="agariType" value="tsumo" checked>ツモ</label>
-        <label><input type="radio" name="agariType" value="ron">ロン</label>
-      </div>
+          <div class="field">
+            <span>上がりタイプ：</span>
+            <label><input type="radio" name="agariType" value="tsumo" checked>ツモ</label>
+            <label><input type="radio" name="agariType" value="ron">ロン</label>
+          </div>
 
-      <div class="field" id="loserField" style="display:none;">
-        <label>放銃者：
-          <select id="loserSelect"></select>
-        </label>
-      </div>
+          <div class="field" id="loserField" style="display:none;">
+            <label>放銃者：
+              <select id="loserSelect"></select>
+            </label>
+          </div>
 
-      <div class="field">
-        <label>点数（子 / 親）：
-          <select id="scoreSelect">
-            <option value="">上がりプレイヤーと親を選ぶと候補が出ます</option>
-          </select>
-        </label>
-      </div>
+          <div class="field">
+            <label>点数（子 / 親）：
+              <select id="scoreSelect">
+                <option value="">上がりプレイヤーと親を選ぶと候補が出ます</option>
+              </select>
+            </label>
+          </div>
 
-      <div class="field">
-        <button class="main-btn" id="applyBtn">点数を反映</button>
+          <div class="field">
+            <button class="main-btn" id="applyBtn">点数を反映</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -382,6 +452,12 @@
     const honbaCountSpan = document.getElementById("honbaCount");
     const inputPanel = document.getElementById("inputPanel");
     const inputInner = document.querySelector(".input-inner");
+
+    const ryuukyokuBtn = document.getElementById("ryuukyokuBtn");
+    const ryuukyokuPanel = document.getElementById("ryuukyokuPanel");
+    const tenpaiCheckboxesDiv = document.getElementById("tenpaiCheckboxes");
+    const ryuukyokuApplyBtn = document.getElementById("ryuukyokuApply");
+    const ryuukyokuCancelBtn = document.getElementById("ryuukyokuCancel");
 
     function initPlayers() {
       players = [];
@@ -457,7 +533,7 @@
       updateWinnerText();
       updateLoserOptions();
       updateScoreOptions();
-      updatePanelOrientation();
+      updatePanelPosition();
     }
 
     function clearWinnerHighlight() {
@@ -476,16 +552,16 @@
       updateWinnerText();
       updateLoserOptions();
       updateScoreOptions();
-      updatePanelOrientation();
+      updatePanelPosition();
     }
 
-    function updatePanelOrientation() {
-      inputPanel.classList.remove("orient-top", "orient-bottom", "orient-left", "orient-right");
-      let cls = "orient-bottom"; // デフォルトは南家視点
-      if (winnerIndex === 0) cls = "orient-top";
-      else if (winnerIndex === 1) cls = "orient-right";
-      else if (winnerIndex === 2) cls = "orient-bottom";
-      else if (winnerIndex === 3) cls = "orient-left";
+    function updatePanelPosition() {
+      inputPanel.classList.remove("panel-top", "panel-bottom", "panel-left", "panel-right");
+      let cls = "panel-bottom"; // デフォルト南家
+      if (winnerIndex === 0) cls = "panel-top";
+      else if (winnerIndex === 1) cls = "panel-right";
+      else if (winnerIndex === 2 || winnerIndex === null) cls = "panel-bottom";
+      else if (winnerIndex === 3) cls = "panel-left";
       inputPanel.classList.add(cls);
     }
 
@@ -670,6 +746,71 @@
       renderScores();
     }
 
+    // ▼ 流局処理（テンパイ選択 → 3000点を移動）
+    function openRyuukyokuPanel() {
+      tenpaiCheckboxesDiv.innerHTML = "";
+      for (let i = 0; i < playerCount; i++) {
+        const label = document.createElement("label");
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+        label.style.gap = "2px";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = i;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(players[i].name));
+        tenpaiCheckboxesDiv.appendChild(label);
+      }
+      ryuukyokuPanel.style.display = "block";
+    }
+
+    function closeRyuukyokuPanel() {
+      ryuukyokuPanel.style.display = "none";
+    }
+
+    function applyRyuukyoku() {
+      const tenpaiIndices = [];
+      const cbs = tenpaiCheckboxesDiv.querySelectorAll("input[type='checkbox']");
+      cbs.forEach(cb => {
+        if (cb.checked) tenpaiIndices.push(parseInt(cb.value, 10));
+      });
+
+      if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
+        // 全員ノーテン or 全員テンパイ → 点数移動なし
+        addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
+        closeRyuukyokuPanel();
+        return;
+      }
+
+      const total = 3000;
+      const nTenpai = tenpaiIndices.length;
+      const nNoten = playerCount - nTenpai;
+
+      const gainPerTenpai = Math.floor(total / nTenpai);
+      const lossPerNoten = Math.floor(total / nNoten);
+
+      // ノーテン者一覧
+      const notenIndices = [];
+      for (let i = 0; i < playerCount; i++) {
+        if (!tenpaiIndices.includes(i)) notenIndices.push(i);
+      }
+
+      tenpaiIndices.forEach(i => {
+        players[i].score += gainPerTenpai;
+      });
+      notenIndices.forEach(i => {
+        players[i].score -= lossPerNoten;
+      });
+
+      renderScores();
+
+      const tenpaiNames = tenpaiIndices.map(i => players[i].name).join(" / ");
+      const notenNames = notenIndices.map(i => players[i].name).join(" / ");
+      addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
+
+      closeRyuukyokuPanel();
+    }
+
     // ▼ イベント設定
     seats.forEach(seat => {
       seat.addEventListener("click", () => {
@@ -724,6 +865,16 @@
       updateWinnerText();
     });
 
+    ryuukyokuBtn.addEventListener("click", () => {
+      openRyuukyokuPanel();
+    });
+    ryuukyokuCancelBtn.addEventListener("click", () => {
+      closeRyuukyokuPanel();
+    });
+    ryuukyokuApplyBtn.addEventListener("click", () => {
+      applyRyuukyoku();
+    });
+
     // 初期化
     initPlayers();
     initNameSelects();
@@ -731,8 +882,7 @@
     updateWinnerText();
     updateLoserOptions();
     updateScoreOptions();
-    updatePanelOrientation();
+    updatePanelPosition();
   </script>
 </body>
 </html>
-
