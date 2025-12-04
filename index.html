@@ -1019,48 +1019,54 @@
     }
 
     function applyRyuukyoku() {
-      const tenpaiIndices = [];
-      const cbs = tenpaiCheckboxesDiv.querySelectorAll("input[type='checkbox']");
-      cbs.forEach(cb => {
-        if (cb.checked) tenpaiIndices.push(parseInt(cb.value, 10));
-      });
+  const tenpaiIndices = [];
+  const cbs = tenpaiCheckboxesDiv.querySelectorAll("input[type='checkbox']");
+  cbs.forEach(cb => {
+    if (cb.checked) tenpaiIndices.push(parseInt(cb.value, 10));
+  });
 
-      if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
-        addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
-        closeRyuukyokuPanel();
-        return;
-      }
+  if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
+    addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
+    closeRyuukyokuPanel();
+    return;
+  }
 
-      saveState();
+  // 🔁 流局精算前に状態保存
+  saveState();
 
-      const total = 3000;
-      const nTenpai = tenpaiIndices.length;
-      const nNoten = playerCount - nTenpai;
+  const total = 3000;
+  const nTenpai = tenpaiIndices.length;
+  const nNoten = playerCount - nTenpai;
 
-      const gainPerTenpai = Math.floor(total / nTenpai);
-      const lossPerNoten = Math.floor(total / nNoten);
+  const gainPerTenpai = Math.floor(total / nTenpai);
+  const lossPerNoten = Math.floor(total / nNoten);
 
-      const notenIndices = [];
-      for (let i = 0; i < playerCount; i++) {
-        if (!tenpaiIndices.includes(i)) notenIndices.push(i);
-      }
+  const notenIndices = [];
+  for (let i = 0; i < playerCount; i++) {
+    if (!tenpaiIndices.includes(i)) notenIndices.push(i);
+  }
 
-      tenpaiIndices.forEach(i => {
-        players[i].score += gainPerTenpai;
-      });
-      notenIndices.forEach(i => {
-        players[i].score -= lossPerNoten;
-      });
+  tenpaiIndices.forEach(i => {
+    players[i].score += gainPerTenpai;
+  });
+  notenIndices.forEach(i => {
+    players[i].score -= lossPerNoten;
+  });
 
-      renderScores();
+  renderScores();
 
-      const tenpaiNames = tenpaiIndices.map(i => players[i].name).join(" / ");
-      const notenNames = notenIndices.map(i => players[i].name).join(" / ");
-      addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
+  const tenpaiNames = tenpaiIndices.map(i => players[i].name).join(" / ");
+  const notenNames = notenIndices.map(i => players[i].name).join(" / ");
+  addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
 
-      closeRyuukyokuPanel();
-      updateWinnerText();
-    }
+  // ★ 流局後はリーチ状態だけリセット（棒は場に残す）
+  reachFlags = reachFlags.map(() => false);
+  updateReachUI();
+
+  closeRyuukyokuPanel();
+  updateWinnerText();
+}
+
 
     function shuffleSeats() {
       saveState();
@@ -1218,32 +1224,44 @@
       resetScores();
     });
 
-    // リーチボタン
-    reachButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.dataset.index, 10);
-        if (idx >= playerCount) return;
-        if (reachFlags[idx]) {
-          // すでにリーチ中 → 取り消しはアンドゥで対応
-          return;
-        }
-        if (players[idx].score < 1000) {
-          alert("1000点未満のためリーチできません。");
-          return;
-        }
+  // リーチボタン（もう一度押すとキャンセル）
+reachButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const idx = parseInt(btn.dataset.index, 10);
+    if (idx >= playerCount) return;
 
-        saveState();
+    // 押すたびに履歴を残す
+    saveState();
 
-        players[idx].score -= 1000;
-        reachFlags[idx] = true;
-        reachSticks += 1;
+    // まだリーチしていない → リーチ宣言
+    if (!reachFlags[idx]) {
+      if (players[idx].score < 1000) {
+        alert("1000点未満のためリーチできません。");
+        // 保存した履歴を取り消す
+        history.pop();
+        return;
+      }
 
-        renderScores();
-        updateReachUI();
-        addLog(`リーチ：${players[idx].name} -1000 / リーチ棒 ${reachSticks}本`);
-        updateWinnerText();
-      });
-    });
+      players[idx].score -= 1000;
+      reachFlags[idx] = true;
+      reachSticks += 1;
+
+      addLog(`リーチ：${players[idx].name} -1000 / リーチ棒 ${reachSticks}本`);
+    } else {
+      // すでにリーチしている → 取り消し（+1000してリーチ棒−1）
+      players[idx].score += 1000;
+      reachFlags[idx] = false;
+      if (reachSticks > 0) reachSticks -= 1;
+
+      addLog(`リーチ取り消し：${players[idx].name} +1000 / リーチ棒 ${reachSticks}本`);
+    }
+
+    renderScores();
+    updateReachUI();
+    updateWinnerText();
+  });
+});
+
 
     // 初期化
     initPlayers();
