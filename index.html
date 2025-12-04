@@ -21,9 +21,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 100px;
+      margin-bottom: 10px;
       gap: 8px;
       font-size: 14px;
+      flex-wrap: wrap;
     }
     select, button, input[type="radio"] {
       font-size: 14px;
@@ -78,12 +79,12 @@
       transform: translateX(-50%) rotate(0deg);
     }
     .seat-left {
-      left: -10px;
+      left: 4px;
       top: 50%;
       transform: translateY(-50%) rotate(90deg);
     }
     .seat-right {
-      right: -10px;
+      right: 4px;
       top: 50%;
       transform: translateY(-50%) rotate(-90deg);
     }
@@ -106,12 +107,40 @@
       display: none; /* プルダウン下の名前は非表示 */
     }
 
+    .dealer-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     .dealer-label {
       font-size: 12px;
     }
 
+    /* リーチボタン */
+    .reach-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid #666;
+      background: #fff;
+      color: #666;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .reach-btn.active-reach {
+      background: #ff5252;
+      color: #fff;
+      border-color: #ff5252;
+    }
+
+    /* 点数を大きく（約3倍） */
     .score {
-      font-size: 24px;
+      font-size: 48px;
       font-weight: bold;
       line-height: 1.1;
     }
@@ -141,10 +170,24 @@
       font-size: 11px;
     }
 
-    /* 流局ボタン（本場ボックスの下） */
+    /* リーチ棒表示（本場の下） */
+    #reachPool {
+      position: absolute;
+      top: calc(50% + 12px);
+      left: 50%;
+      transform: translate(-50%, 0);
+      background: #ffffffee;
+      border-radius: 10px;
+      padding: 2px 6px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      z-index: 5;
+    }
+
+    /* 流局ボタン（リーチ棒のさらに下） */
     #ryuukyokuBtnBox {
       position: absolute;
-      top: calc(50% + 32px);
+      top: calc(50% + 36px);
       left: 50%;
       transform: translate(-50%, 0);
       z-index: 5;
@@ -252,6 +295,14 @@
     button.secondary-btn:active {
       opacity: 0.8;
     }
+    button.small-btn {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #eee;
+      color: #333;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -265,6 +316,7 @@
         <option value="3">3人</option>
       </select>
     </div>
+    <button type="button" id="shuffleSeatsBtn" class="small-btn">席替え</button>
     <div>※卓のプレイヤーをタップして「上がり」を選択</div>
   </div>
 
@@ -279,7 +331,12 @@
         <button type="button" id="honbaReset">リセット</button>
       </div>
 
-      <!-- 流局ボタン（本場ボックスの下） -->
+      <!-- リーチ棒表示 -->
+      <div id="reachPool">
+        リーチ棒：<span id="reachCount">0</span> 本
+      </div>
+
+      <!-- 流局ボタン -->
       <div id="ryuukyokuBtnBox">
         <button type="button" id="ryuukyokuBtn">流局</button>
       </div>
@@ -299,10 +356,13 @@
         <div class="player-header">
           <select class="name-select"></select>
           <div class="name-view"></div>
-          <label class="dealer-label">
-            <input type="radio" name="dealer" class="dealer-radio">
-            親
-          </label>
+          <div class="dealer-row">
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio">
+              親
+            </label>
+            <button type="button" class="reach-btn" data-index="0">●</button>
+          </div>
         </div>
         <div class="score" data-score-index="0">25000</div>
       </div>
@@ -312,10 +372,13 @@
         <div class="player-header">
           <select class="name-select"></select>
           <div class="name-view"></div>
-          <label class="dealer-label">
-            <input type="radio" name="dealer" class="dealer-radio">
-            親
-          </label>
+          <div class="dealer-row">
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio">
+              親
+            </label>
+            <button type="button" class="reach-btn" data-index="1">●</button>
+          </div>
         </div>
         <div class="score" data-score-index="1">25000</div>
       </div>
@@ -325,10 +388,13 @@
         <div class="player-header">
           <select class="name-select"></select>
           <div class="name-view"></div>
-          <label class="dealer-label">
-            <input type="radio" name="dealer" class="dealer-radio" checked>
-            親
-          </label>
+          <div class="dealer-row">
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio" checked>
+              親
+            </label>
+            <button type="button" class="reach-btn" data-index="2">●</button>
+          </div>
         </div>
         <div class="score" data-score-index="2">25000</div>
       </div>
@@ -338,10 +404,13 @@
         <div class="player-header">
           <select class="name-select"></select>
           <div class="name-view"></div>
-          <label class="dealer-label">
-            <input type="radio" name="dealer" class="dealer-radio">
-            親
-          </label>
+          <div class="dealer-row">
+            <label class="dealer-label">
+              <input type="radio" name="dealer" class="dealer-radio">
+              親
+            </label>
+            <button type="button" class="reach-btn" data-index="3">●</button>
+          </div>
         </div>
         <div class="score" data-score-index="3">25000</div>
       </div>
@@ -395,7 +464,8 @@
       "たかし"
     ];
 
-    const INITIAL_POINTS = 25000;
+    const INITIAL_POINTS_FOUR = 25000;
+    const INITIAL_POINTS_THREE = 35000;
 
     const CHILD_SCORES = [
       { id: "c1",  label: "1000 (ツモ: 子200 / 親600)",    ron: 1000,  tsumoChild: 200,   tsumoParent: 600 },
@@ -427,6 +497,7 @@
     let honbaCount = 0;
 
     const playerCountSelect = document.getElementById("playerCount");
+    const shuffleSeatsBtn = document.getElementById("shuffleSeatsBtn");
     const seats = document.querySelectorAll(".seat");
     const nameSelects = document.querySelectorAll(".name-select");
     const nameViews = document.querySelectorAll(".name-view");
@@ -452,9 +523,16 @@
     const ryuukyokuApplyBtn = document.getElementById("ryuukyokuApply");
     const ryuukyokuCancelBtn = document.getElementById("ryuukyokuCancel");
 
+    const reachCountSpan = document.getElementById("reachCount");
+    const reachButtons = document.querySelectorAll(".reach-btn");
+
     // 🔁 アンドゥ・リドゥ用履歴
     let history = [];
     let future = [];
+
+    // リーチ状態
+    let reachFlags = [false, false, false, false];
+    let reachSticks = 0;
 
     function saveState() {
       const state = {
@@ -462,7 +540,9 @@
         honba: honbaCount,
         dealer: getDealerIndex(),
         winnerIndex: winnerIndex,
-        logHtml: logDiv.innerHTML
+        logHtml: logDiv.innerHTML,
+        reachFlags: [...reachFlags],
+        reachSticks: reachSticks
       };
       history.push(state);
       // 新しい操作が入ったので、進む側はクリア
@@ -473,6 +553,9 @@
       players = JSON.parse(JSON.stringify(st.players));
       honbaCount = st.honba;
       winnerIndex = st.winnerIndex;
+
+      reachFlags = st.reachFlags ? [...st.reachFlags] : [false, false, false, false];
+      reachSticks = st.reachSticks || 0;
 
       // 親復元
       dealerRadios.forEach(r => r.checked = false);
@@ -497,6 +580,10 @@
       // ログ復元
       logDiv.innerHTML = st.logHtml || "";
 
+      // 名前セレクト反映
+      refreshNamesFromPlayers();
+
+      updateReachUI();
       updateWinnerText();
       updateScoreOptions();
       updateLoserOptions();
@@ -511,7 +598,9 @@
         honba: honbaCount,
         dealer: getDealerIndex(),
         winnerIndex: winnerIndex,
-        logHtml: logDiv.innerHTML
+        logHtml: logDiv.innerHTML,
+        reachFlags: [...reachFlags],
+        reachSticks: reachSticks
       };
       future.push(current);
 
@@ -529,7 +618,9 @@
         honba: honbaCount,
         dealer: getDealerIndex(),
         winnerIndex: winnerIndex,
-        logHtml: logDiv.innerHTML
+        logHtml: logDiv.innerHTML,
+        reachFlags: [...reachFlags],
+        reachSticks: reachSticks
       };
       history.push(current);
 
@@ -543,7 +634,7 @@
       for (let i = 0; i < 4; i++) {
         players.push({
           name: NAME_OPTIONS[i] || `プレイヤー${i+1}`,
-          score: INITIAL_POINTS
+          score: INITIAL_POINTS_FOUR
         });
       }
       players.forEach((p, i) => {
@@ -582,6 +673,15 @@
       });
     }
 
+    function refreshNamesFromPlayers() {
+      nameSelects.forEach((sel, i) => {
+        sel.value = players[i].name;
+        if (nameViews[i]) {
+          nameViews[i].textContent = players[i].name;
+        }
+      });
+    }
+
     function getDealerIndex() {
       for (let i = 0; i < dealerRadios.length; i++) {
         if (dealerRadios[i].checked) {
@@ -605,6 +705,7 @@
           if (radio) radio.checked = false;
         }
       });
+
       const dealerIdx = getDealerIndex();
       if (dealerIdx >= playerCount) {
         dealerRadios[0].checked = true;
@@ -613,6 +714,38 @@
         winnerIndex = null;
       }
       clearWinnerHighlight();
+
+      // ★ 3人のとき初期 35000 / 4人は 25000 に自動調整（ゲーム開始直後を想定）
+      if (playerCount === 3) {
+        let allActive25000 = true;
+        for (let i = 0; i < 3; i++) {
+          if (players[i].score !== INITIAL_POINTS_FOUR) {
+            allActive25000 = false;
+            break;
+          }
+        }
+        if (allActive25000) {
+          for (let i = 0; i < 3; i++) {
+            players[i].score = INITIAL_POINTS_THREE;
+          }
+        }
+      } else if (playerCount === 4) {
+        let allActive35000 = true;
+        for (let i = 0; i < 4; i++) {
+          if (players[i].score !== INITIAL_POINTS_THREE) {
+            allActive35000 = false;
+            break;
+          }
+        }
+        if (allActive35000) {
+          for (let i = 0; i < 4; i++) {
+            players[i].score = INITIAL_POINTS_FOUR;
+          }
+        }
+      }
+
+      renderScores();
+      updateReachUI();
       updateWinnerText();
       updateLoserOptions();
       updateScoreOptions();
@@ -643,7 +776,7 @@
         const dealerIdx = getDealerIndex();
         const isDealer = dealerIdx === winnerIndex;
         winnerDisplay.textContent =
-          `上がり：${players[winnerIndex].name}（${isDealer ? "親" : "子"}） / 本場：${honbaCount}本`;
+          `上がり：${players[winnerIndex].name}（${isDealer ? "親" : "子"}） / 本場：${honbaCount}本 / リーチ棒：${reachSticks}本`;
       }
     }
 
@@ -739,6 +872,19 @@
       logDiv.prepend(div);
     }
 
+    function updateReachUI() {
+      reachCountSpan.textContent = reachSticks;
+      reachButtons.forEach(btn => {
+        const idx = parseInt(btn.dataset.index, 10);
+        const active = idx < playerCount && reachFlags[idx];
+        if (active) {
+          btn.classList.add("active-reach");
+        } else {
+          btn.classList.remove("active-reach");
+        }
+      });
+    }
+
     function applyScore() {
       if (winnerIndex === null) {
         alert("先に上がりプレイヤーを卓からタップしてください。");
@@ -818,7 +964,18 @@
         }
       }
 
+      // ★ リーチ棒回収（アガリ時）
+      if (reachSticks > 0) {
+        const pot = reachSticks * 1000;
+        players[winnerIndex].score += pot;
+        addLog(`リーチ棒 ${reachSticks}本（+${pot}）を ${players[winnerIndex].name} が回収`);
+        reachSticks = 0;
+        reachFlags = reachFlags.map(() => false);
+        updateReachUI();
+      }
+
       renderScores();
+      updateWinnerText();
     }
 
     // ▼ 流局処理（テンパイ選択 → 3000点を移動）
@@ -885,6 +1042,65 @@
       addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
 
       closeRyuukyokuPanel();
+      updateWinnerText();
+    }
+
+    // 席替え（ランダムシャッフル）
+    function shuffleSeats() {
+      // 状態保存
+      saveState();
+
+      const indices = [];
+      for (let i = 0; i < playerCount; i++) indices.push(i);
+
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+
+      const oldPlayers = players.slice();
+      const oldReach = reachFlags.slice();
+      const oldDealer = getDealerIndex();
+      const oldWinner = winnerIndex;
+
+      for (let i = 0; i < playerCount; i++) {
+        players[i] = { ...oldPlayers[indices[i]] };
+        reachFlags[i] = oldReach[indices[i]];
+      }
+
+      // dealer / winner 再計算
+      let newDealer = 0;
+      for (let i = 0; i < playerCount; i++) {
+        if (indices[i] === oldDealer) {
+          newDealer = i;
+          break;
+        }
+      }
+      let newWinner = null;
+      if (oldWinner !== null && oldWinner < playerCount) {
+        for (let i = 0; i < playerCount; i++) {
+          if (indices[i] === oldWinner) {
+            newWinner = i;
+            break;
+          }
+        }
+      }
+
+      dealerRadios.forEach(r => r.checked = false);
+      const dealerRadio = document.querySelector(`.seat[data-index="${newDealer}"] .dealer-radio`);
+      if (dealerRadio) dealerRadio.checked = true;
+      winnerIndex = newWinner;
+
+      renderScores();
+      clearWinnerHighlight();
+      if (winnerIndex !== null) {
+        const seat = document.querySelector(`.seat[data-index="${winnerIndex}"]`);
+        if (seat) seat.classList.add("winner");
+      }
+      refreshNamesFromPlayers();
+      updateReachUI();
+      updateWinnerText();
+      addLog("席替えを実行");
     }
 
     // ▼ イベント設定
@@ -959,13 +1175,51 @@
       applyRyuukyoku();
     });
 
+    shuffleSeatsBtn.addEventListener("click", () => {
+      shuffleSeats();
+    });
+
+    // リーチボタン
+    reachButtons.forEach(btn => {
+      const stop = (e) => e.stopPropagation();
+      btn.addEventListener("click", stop);
+      btn.addEventListener("touchstart", stop);
+      btn.addEventListener("mousedown", stop);
+
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        if (idx >= playerCount) return;
+        if (reachFlags[idx]) {
+          // すでにリーチ中 → 取り消しはせず、アンドゥで対応してもらう
+          return;
+        }
+        if (players[idx].score < 1000) {
+          alert("1000点未満のためリーチできません。");
+          return;
+        }
+
+        // リーチ宣言前の状態保存
+        saveState();
+
+        players[idx].score -= 1000;
+        reachFlags[idx] = true;
+        reachSticks += 1;
+
+        renderScores();
+        updateReachUI();
+        addLog(`リーチ：${players[idx].name} -1000 / リーチ棒 ${reachSticks}本`);
+        updateWinnerText();
+      });
+    });
+
     // 初期化
     initPlayers();
     initNameSelects();
-    updatePlayerCount();
+    updatePlayerCount(); // 人数＆初期点数調整
     updateWinnerText();
     updateLoserOptions();
     updateScoreOptions();
+    updateReachUI();
   </script>
 </body>
 </html>
