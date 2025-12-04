@@ -152,7 +152,7 @@
     /* リーチ棒表示（本場の下） */
     #reachPool {
       position: absolute;
-      top: calc(50% + 12px);
+      top: calc(50% + 18px);
       left: 50%;
       transform: translate(-50%, 0);
       background: #ffffffee;
@@ -177,7 +177,8 @@
       border: 1px solid #ccc;
       background: #eee;
       color: #333;
-      font-size: 12px;
+      font-size: 15px;
+      margin-top:10px
     }
 
     /* 流局パネル */
@@ -286,7 +287,7 @@
     /* リーチボタン（白ブロックの横） */
     .reach-btn {
       position: absolute;
-      width: 44px;
+      width: 48px;
       height: 44px;
       border-radius: 50%;
       border: 1px solid #666;
@@ -308,23 +309,26 @@
     /* 各席ごとのリーチボタンの位置（白ブロックの外側横） */
     .reach-top {
       top: 12px;
-      left: calc(50% + 80px); /* 上の席の右横あたり */
+      left: calc(50% + 70px); /* 上の席の右横あたり */
       transform: translateX(-50%);
+      transform: rotate(180deg);
     }
     .reach-bottom {
       bottom: 12px;
-      left: calc(50% - 80px); /* 下の席の左横あたり */
+      left: calc(50% - 90px); /* 下の席の左横あたり */
       transform: translateX(-50%);
     }
     .reach-left {
       left: 16px;
-      top: calc(50% + 80px); /* 左席の下側あたり */
+      top: calc(50% + -115px); /* 左席の下側あたり */
       transform: translateY(-50%);
+      transform: rotate(90deg);
     }
     .reach-right {
       right: 16px;
-      top: calc(50% - 80px); /* 右席の上側あたり */
+      top: calc(50% - -70px); /* 右席の上側あたり */
       transform: translateY(-50%);
+      transform: rotate(270deg);
     }
   </style>
 </head>
