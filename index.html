@@ -117,27 +117,6 @@
       font-size: 12px;
     }
 
-    /* リーチボタン */
-    .reach-btn {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 1px solid #666;
-      background: #fff;
-      color: #666;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      line-height: 1;
-    }
-    .reach-btn.active-reach {
-      background: #ff5252;
-      color: #fff;
-      border-color: #ff5252;
-    }
-
     /* 点数を大きく（約3倍） */
     .score {
       font-size: 48px;
@@ -303,6 +282,50 @@
       color: #333;
       font-size: 12px;
     }
+
+    /* リーチボタン（白ブロックの横） */
+    .reach-btn {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid #666;
+      background: #fff;
+      color: #666;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      z-index: 4;
+    }
+    .reach-btn.active-reach {
+      background: #ff5252;
+      color: #fff;
+      border-color: #ff5252;
+    }
+
+    /* 各席ごとのリーチボタンの位置（白ブロックの外側横） */
+    .reach-top {
+      top: 12px;
+      left: calc(50% + 80px); /* 上の席の右横あたり */
+      transform: translateX(-50%);
+    }
+    .reach-bottom {
+      bottom: 12px;
+      left: calc(50% - 80px); /* 下の席の左横あたり */
+      transform: translateX(-50%);
+    }
+    .reach-left {
+      left: 16px;
+      top: calc(50% + 80px); /* 左席の下側あたり */
+      transform: translateY(-50%);
+    }
+    .reach-right {
+      right: 16px;
+      top: calc(50% - 80px); /* 右席の上側あたり */
+      transform: translateY(-50%);
+    }
   </style>
 </head>
 <body>
@@ -316,7 +339,10 @@
         <option value="3">3人</option>
       </select>
     </div>
-    <button type="button" id="shuffleSeatsBtn" class="small-btn">席替え</button>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button type="button" id="shuffleSeatsBtn" class="small-btn">席替え</button>
+      <button type="button" id="resetScoresBtn" class="small-btn">点数リセット</button>
+    </div>
     <div>※卓のプレイヤーをタップして「上がり」を選択</div>
   </div>
 
@@ -361,11 +387,12 @@
               <input type="radio" name="dealer" class="dealer-radio">
               親
             </label>
-            <button type="button" class="reach-btn" data-index="0">●</button>
           </div>
         </div>
         <div class="score" data-score-index="0">25000</div>
       </div>
+      <!-- 上のリーチボタン（白ブロックの横） -->
+      <button type="button" class="reach-btn reach-top" data-index="0">リーチ</button>
 
       <!-- 1: 右 -->
       <div class="seat seat-right" data-index="1">
@@ -377,11 +404,12 @@
               <input type="radio" name="dealer" class="dealer-radio">
               親
             </label>
-            <button type="button" class="reach-btn" data-index="1">●</button>
           </div>
         </div>
         <div class="score" data-score-index="1">25000</div>
       </div>
+      <!-- 右のリーチボタン -->
+      <button type="button" class="reach-btn reach-right" data-index="1">リーチ</button>
 
       <!-- 2: 下 -->
       <div class="seat seat-bottom" data-index="2">
@@ -393,11 +421,12 @@
               <input type="radio" name="dealer" class="dealer-radio" checked>
               親
             </label>
-            <button type="button" class="reach-btn" data-index="2">●</button>
           </div>
         </div>
         <div class="score" data-score-index="2">25000</div>
       </div>
+      <!-- 下のリーチボタン -->
+      <button type="button" class="reach-btn reach-bottom" data-index="2">リーチ</button>
 
       <!-- 3: 左（3人のときは非表示） -->
       <div class="seat seat-left" data-index="3">
@@ -409,11 +438,12 @@
               <input type="radio" name="dealer" class="dealer-radio">
               親
             </label>
-            <button type="button" class="reach-btn" data-index="3">●</button>
           </div>
         </div>
         <div class="score" data-score-index="3">25000</div>
       </div>
+      <!-- 左のリーチボタン -->
+      <button type="button" class="reach-btn reach-left" data-index="3">リーチ</button>
     </div>
   </div>
 
@@ -498,6 +528,7 @@
 
     const playerCountSelect = document.getElementById("playerCount");
     const shuffleSeatsBtn = document.getElementById("shuffleSeatsBtn");
+    const resetScoresBtn = document.getElementById("resetScoresBtn");
     const seats = document.querySelectorAll(".seat");
     const nameSelects = document.querySelectorAll(".name-select");
     const nameViews = document.querySelectorAll(".name-view");
@@ -545,7 +576,6 @@
         reachSticks: reachSticks
       };
       history.push(state);
-      // 新しい操作が入ったので、進む側はクリア
       future = [];
     }
 
@@ -553,36 +583,26 @@
       players = JSON.parse(JSON.stringify(st.players));
       honbaCount = st.honba;
       winnerIndex = st.winnerIndex;
-
       reachFlags = st.reachFlags ? [...st.reachFlags] : [false, false, false, false];
       reachSticks = st.reachSticks || 0;
 
-      // 親復元
       dealerRadios.forEach(r => r.checked = false);
       const dealerRadio = document.querySelector(
         `.seat[data-index="${st.dealer}"] .dealer-radio`
       );
       if (dealerRadio) dealerRadio.checked = true;
 
-      // スコア更新
       renderScores();
-
-      // 本場表示
       honbaCountSpan.textContent = honbaCount;
 
-      // winner ハイライト
       clearWinnerHighlight();
       if (winnerIndex !== null && winnerIndex < playerCount) {
         const seat = document.querySelector(`.seat[data-index="${winnerIndex}"]`);
         if (seat) seat.classList.add("winner");
       }
 
-      // ログ復元
       logDiv.innerHTML = st.logHtml || "";
-
-      // 名前セレクト反映
       refreshNamesFromPlayers();
-
       updateReachUI();
       updateWinnerText();
       updateScoreOptions();
@@ -592,7 +612,6 @@
     function restoreState() {
       if (history.length === 0) return;
 
-      // 今の状態を future へ（進む用）
       const current = {
         players: JSON.parse(JSON.stringify(players)),
         honba: honbaCount,
@@ -604,7 +623,6 @@
       };
       future.push(current);
 
-      // history から1つ戻す
       const prev = history.pop();
       applyFullState(prev);
     }
@@ -612,7 +630,6 @@
     function redoState() {
       if (future.length === 0) return;
 
-      // 今の状態を history へ
       const current = {
         players: JSON.parse(JSON.stringify(players)),
         honba: honbaCount,
@@ -624,7 +641,6 @@
       };
       history.push(current);
 
-      // future から1つ進める
       const next = future.pop();
       applyFullState(next);
     }
@@ -656,7 +672,6 @@
           nameViews[i].textContent = players[i].name;
         }
 
-        // iPhoneで座席クリックに食われないようにする
         const stop = (e) => e.stopPropagation();
         sel.addEventListener("click", stop);
         sel.addEventListener("touchstart", stop);
@@ -706,6 +721,11 @@
         }
       });
 
+      reachButtons.forEach(btn => {
+        const idx = parseInt(btn.dataset.index, 10);
+        btn.style.display = idx < playerCount ? "flex" : "none";
+      });
+
       const dealerIdx = getDealerIndex();
       if (dealerIdx >= playerCount) {
         dealerRadios[0].checked = true;
@@ -715,7 +735,6 @@
       }
       clearWinnerHighlight();
 
-      // ★ 3人のとき初期 35000 / 4人は 25000 に自動調整（ゲーム開始直後を想定）
       if (playerCount === 3) {
         let allActive25000 = true;
         for (let i = 0; i < 3; i++) {
@@ -882,6 +901,7 @@
         } else {
           btn.classList.remove("active-reach");
         }
+        btn.style.display = idx < playerCount ? "flex" : "none";
       });
     }
 
@@ -906,14 +926,13 @@
       const payersCount = playerCount - 1;
       const perPayerHonba = (payersCount > 0) ? (totalHonbaBonus / payersCount) : 0;
 
-      // 🔁 この一局の変更前に状態を保存（アンドゥ用）
       saveState();
 
       if (agariType === "ron") {
         const loserIdx = parseInt(loserSelect.value, 10);
         if (isNaN(loserIdx)) {
           alert("放銃者を選択してください。");
-          history.pop(); // セーブ取り消し
+          history.pop();
           return;
         }
         const base = scoreInfo.ron;
@@ -964,7 +983,7 @@
         }
       }
 
-      // ★ リーチ棒回収（アガリ時）
+      // リーチ棒回収
       if (reachSticks > 0) {
         const pot = reachSticks * 1000;
         players[winnerIndex].score += pot;
@@ -978,7 +997,6 @@
       updateWinnerText();
     }
 
-    // ▼ 流局処理（テンパイ選択 → 3000点を移動）
     function openRyuukyokuPanel() {
       tenpaiCheckboxesDiv.innerHTML = "";
       for (let i = 0; i < playerCount; i++) {
@@ -1013,7 +1031,6 @@
         return;
       }
 
-      // 🔁 流局精算前に状態保存
       saveState();
 
       const total = 3000;
@@ -1045,9 +1062,7 @@
       updateWinnerText();
     }
 
-    // 席替え（ランダムシャッフル）
     function shuffleSeats() {
-      // 状態保存
       saveState();
 
       const indices = [];
@@ -1068,7 +1083,6 @@
         reachFlags[i] = oldReach[indices[i]];
       }
 
-      // dealer / winner 再計算
       let newDealer = 0;
       for (let i = 0; i < playerCount; i++) {
         if (indices[i] === oldDealer) {
@@ -1101,6 +1115,27 @@
       updateReachUI();
       updateWinnerText();
       addLog("席替えを実行");
+    }
+
+    function resetScores() {
+      saveState();
+
+      const initial = (playerCount === 3) ? INITIAL_POINTS_THREE : INITIAL_POINTS_FOUR;
+      for (let i = 0; i < 4; i++) {
+        players[i].score = initial;
+      }
+
+      honbaCount = 0;
+      honbaCountSpan.textContent = honbaCount;
+      reachSticks = 0;
+      reachFlags = [false, false, false, false];
+      clearWinnerHighlight();
+      winnerIndex = null;
+
+      updateReachUI();
+      renderScores();
+      updateWinnerText();
+      addLog("点数を初期値にリセット");
     }
 
     // ▼ イベント設定
@@ -1179,18 +1214,17 @@
       shuffleSeats();
     });
 
+    resetScoresBtn.addEventListener("click", () => {
+      resetScores();
+    });
+
     // リーチボタン
     reachButtons.forEach(btn => {
-      const stop = (e) => e.stopPropagation();
-      btn.addEventListener("click", stop);
-      btn.addEventListener("touchstart", stop);
-      btn.addEventListener("mousedown", stop);
-
       btn.addEventListener("click", () => {
         const idx = parseInt(btn.dataset.index, 10);
         if (idx >= playerCount) return;
         if (reachFlags[idx]) {
-          // すでにリーチ中 → 取り消しはせず、アンドゥで対応してもらう
+          // すでにリーチ中 → 取り消しはアンドゥで対応
           return;
         }
         if (players[idx].score < 1000) {
@@ -1198,7 +1232,6 @@
           return;
         }
 
-        // リーチ宣言前の状態保存
         saveState();
 
         players[idx].score -= 1000;
@@ -1215,7 +1248,7 @@
     // 初期化
     initPlayers();
     initNameSelects();
-    updatePlayerCount(); // 人数＆初期点数調整
+    updatePlayerCount();
     updateWinnerText();
     updateLoserOptions();
     updateScoreOptions();
