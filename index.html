@@ -979,6 +979,15 @@
 
       renderScores();
       updateWinnerText();
+
+      // ★ 親あがりなら本場＋1
+      const dealerIdx = getDealerIndex();
+      if (winnerIndex === dealerIdx) {
+        honbaCount++;
+        honbaCountSpan.textContent = honbaCount;
+        addLog("親あがり：本場 +1");
+      }
+
     }
 
     function openRyuukyokuPanel() {
@@ -1005,16 +1014,21 @@
       cbs.forEach(cb => { if (cb.checked) tenpaiIndices.push(parseInt(cb.value, 10)); });
 
       if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
-        addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
-        closeRyuukyokuPanel();
-
-        // 流局後はリーチ状態だけリセット（棒は場に残す）
+        saveState();
+      
+        honbaCount++;
+        honbaCountSpan.textContent = honbaCount;
+      
+        addLog("流局：点数移動なし → 本場 +1");
+      
         reachFlags = reachFlags.map(() => false);
         updateReachUI();
-
+      
         updateWinnerText();
+        closeRyuukyokuPanel();
         return;
       }
+      
 
       saveState();
 
@@ -1036,6 +1050,11 @@
       const tenpaiNames = tenpaiIndices.map(i => players[i].name).join(" / ");
       const notenNames = notenIndices.map(i => players[i].name).join(" / ");
       addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
+
+      honbaCount++;
+      honbaCountSpan.textContent = honbaCount;
+      addLog("流局：本場 +1");
+
 
       // 流局後はリーチ状態だけリセット（棒は場に残す）
       reachFlags = reachFlags.map(() => false);
