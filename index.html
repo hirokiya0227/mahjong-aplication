@@ -104,7 +104,7 @@
       font-weight: bold;
       font-size: 14px;
       white-space: nowrap;
-      display: none; /* プルダウン下の名前は非表示 */
+      display: none;
     }
 
     .dealer-row {
@@ -117,7 +117,6 @@
       font-size: 12px;
     }
 
-    /* 点数を大きく（約3倍） */
     .score {
       font-size: 24px;
       font-weight: bold;
@@ -309,26 +308,87 @@
     /* 各席ごとのリーチボタンの位置（白ブロックの外側横） */
     .reach-top {
       top: 12px;
-      left: calc(50% + 70px); /* 上の席の右横あたり */
+      left: calc(50% + 70px);
       transform: translateX(-50%);
       transform: rotate(180deg);
     }
     .reach-bottom {
       bottom: 12px;
-      left: calc(50% - 90px); /* 下の席の左横あたり */
+      left: calc(50% - 90px);
       transform: translateX(-50%);
     }
     .reach-left {
       left: 16px;
-      top: calc(50% + -115px); /* 左席の下側あたり */
+      top: calc(50% + -115px);
       transform: translateY(-50%);
       transform: rotate(90deg);
     }
     .reach-right {
       right: 16px;
-      top: calc(50% - -70px); /* 右席の上側あたり */
+      top: calc(50% - -70px);
       transform: translateY(-50%);
       transform: rotate(270deg);
+    }
+
+    /* ====== 追加：親の虹色 / 低スコア赤 / ロンボタン ====== */
+
+    .seat.dealer-seat {
+      background: linear-gradient(90deg,
+        #ff1744, #ff9100, #ffee00, #00e676, #00b0ff, #651fff, #d500f9
+      );
+      border-color: #8e24aa;
+      box-shadow: 0 0 10px #8e24aa66;
+    }
+
+    .seat.low-score {
+      background: #ffebee;
+      border-color: #f44336;
+      box-shadow: 0 0 8px #f4433666;
+    }
+
+    .seat.dealer-seat.low-score {
+      background: linear-gradient(90deg,
+        #ff1744, #ff9100, #ffee00, #00e676, #00b0ff, #651fff, #d500f9
+      );
+      border-color: #f44336;
+      box-shadow: 0 0 10px #f4433666;
+    }
+
+    .ron-btn {
+      position: absolute;
+      width: 48px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      background: #222;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 4;
+    }
+
+    .ron-top {
+      top: 12px;
+      left: calc(50% + 125px);
+      transform: translateX(-50%) rotate(180deg);
+    }
+    .ron-right {
+      right: 16px;
+      top: calc(50% + 130px);
+      transform: translateY(-50%) rotate(270deg);
+    }
+    .ron-bottom {
+      bottom: 12px;
+      left: calc(50% - 145px);
+      transform: translateX(-50%);
+    }
+    .ron-left {
+      left: 16px;
+      top: calc(50% - 165px);
+      transform: translateY(-50%) rotate(90deg);
     }
   </style>
 </head>
@@ -347,7 +407,7 @@
       <button type="button" id="shuffleSeatsBtn" class="small-btn">席替え</button>
       <button type="button" id="resetScoresBtn" class="small-btn">点数リセット</button>
     </div>
-    <div>※卓のプレイヤーをタップして「上がり」を選択</div>
+    <div>※卓のプレイヤーをタップして「上がり」 / ロンは各席のボタン</div>
   </div>
 
   <div id="boardWrapper">
@@ -395,8 +455,10 @@
         </div>
         <div class="score" data-score-index="0">25000</div>
       </div>
-      <!-- 上のリーチボタン（白ブロックの横） -->
+      <!-- 上のリーチボタン -->
       <button type="button" class="reach-btn reach-top" data-index="0">リーチ</button>
+      <!-- 上のロンボタン -->
+      <button type="button" class="ron-btn ron-top" data-index="0">ロン</button>
 
       <!-- 1: 右 -->
       <div class="seat seat-right" data-index="1">
@@ -414,6 +476,8 @@
       </div>
       <!-- 右のリーチボタン -->
       <button type="button" class="reach-btn reach-right" data-index="1">リーチ</button>
+      <!-- 右のロンボタン -->
+      <button type="button" class="ron-btn ron-right" data-index="1">ロン</button>
 
       <!-- 2: 下 -->
       <div class="seat seat-bottom" data-index="2">
@@ -431,6 +495,8 @@
       </div>
       <!-- 下のリーチボタン -->
       <button type="button" class="reach-btn reach-bottom" data-index="2">リーチ</button>
+      <!-- 下のロンボタン -->
+      <button type="button" class="ron-btn ron-bottom" data-index="2">ロン</button>
 
       <!-- 3: 左（3人のときは非表示） -->
       <div class="seat seat-left" data-index="3">
@@ -448,25 +514,15 @@
       </div>
       <!-- 左のリーチボタン -->
       <button type="button" class="reach-btn reach-left" data-index="3">リーチ</button>
+      <!-- 左のロンボタン -->
+      <button type="button" class="ron-btn ron-left" data-index="3">ロン</button>
     </div>
   </div>
 
-  <!-- 卓の下に固定の設定パネル（全プレイヤー共通） -->
+  <!-- 卓の下に固定の設定パネル（ツモ固定 / ロンは席ボタン） -->
   <div class="input-panel" id="inputPanel">
     <div class="input-inner">
-      <div id="winnerDisplay">上がったプレイヤーを卓からタップしてください。</div>
-
-      <div class="field">
-        <span>上がりタイプ：</span>
-        <label><input type="radio" name="agariType" value="tsumo" checked>ツモ</label>
-        <label><input type="radio" name="agariType" value="ron">ロン</label>
-      </div>
-
-      <div class="field" id="loserField" style="display:none;">
-        <label>放銃者：
-          <select id="loserSelect"></select>
-        </label>
-      </div>
+      <div id="winnerDisplay">ツモ：上がったプレイヤーを卓からタップしてください。 / ロンは各席の「ロン」ボタン</div>
 
       <div class="field">
         <label>点数（子 / 親）：
@@ -530,6 +586,10 @@
     let winnerIndex = null;
     let honbaCount = 0;
 
+    // 追加：ロンモード管理
+    let mode = "tsumo";     // "tsumo" or "ron"
+    let loserIndex = null;  // ron時の放銃者
+
     const playerCountSelect = document.getElementById("playerCount");
     const shuffleSeatsBtn = document.getElementById("shuffleSeatsBtn");
     const resetScoresBtn = document.getElementById("resetScoresBtn");
@@ -539,9 +599,6 @@
     const dealerRadios = document.querySelectorAll(".dealer-radio");
     const scoreElems = document.querySelectorAll(".score");
     const winnerDisplay = document.getElementById("winnerDisplay");
-    const agariTypeRadios = document.querySelectorAll("input[name='agariType']");
-    const loserField = document.getElementById("loserField");
-    const loserSelect = document.getElementById("loserSelect");
     const scoreSelect = document.getElementById("scoreSelect");
     const applyBtn = document.getElementById("applyBtn");
     const undoBtn = document.getElementById("undoBtn");
@@ -560,6 +617,7 @@
 
     const reachCountSpan = document.getElementById("reachCount");
     const reachButtons = document.querySelectorAll(".reach-btn");
+    const ronButtons = document.querySelectorAll(".ron-btn");
 
     // 🔁 アンドゥ・リドゥ用履歴
     let history = [];
@@ -577,7 +635,9 @@
         winnerIndex: winnerIndex,
         logHtml: logDiv.innerHTML,
         reachFlags: [...reachFlags],
-        reachSticks: reachSticks
+        reachSticks: reachSticks,
+        mode: mode,
+        loserIndex: loserIndex
       };
       history.push(state);
       future = [];
@@ -589,6 +649,8 @@
       winnerIndex = st.winnerIndex;
       reachFlags = st.reachFlags ? [...st.reachFlags] : [false, false, false, false];
       reachSticks = st.reachSticks || 0;
+      mode = st.mode || "tsumo";
+      loserIndex = (st.loserIndex === undefined) ? null : st.loserIndex;
 
       dealerRadios.forEach(r => r.checked = false);
       const dealerRadio = document.querySelector(
@@ -610,7 +672,7 @@
       updateReachUI();
       updateWinnerText();
       updateScoreOptions();
-      updateLoserOptions();
+      updateSeatStyles();
     }
 
     function restoreState() {
@@ -623,7 +685,9 @@
         winnerIndex: winnerIndex,
         logHtml: logDiv.innerHTML,
         reachFlags: [...reachFlags],
-        reachSticks: reachSticks
+        reachSticks: reachSticks,
+        mode: mode,
+        loserIndex: loserIndex
       };
       future.push(current);
 
@@ -641,7 +705,9 @@
         winnerIndex: winnerIndex,
         logHtml: logDiv.innerHTML,
         reachFlags: [...reachFlags],
-        reachSticks: reachSticks
+        reachSticks: reachSticks,
+        mode: mode,
+        loserIndex: loserIndex
       };
       history.push(current);
 
@@ -683,11 +749,9 @@
 
         sel.addEventListener("change", () => {
           players[i].name = sel.value;
-          if (nameViews[i]) {
-            nameViews[i].textContent = sel.value;
-          }
+          if (nameViews[i]) nameViews[i].textContent = sel.value;
           updateWinnerText();
-          updateLoserOptions();
+          updateScoreOptions();
         });
       });
     }
@@ -695,9 +759,7 @@
     function refreshNamesFromPlayers() {
       nameSelects.forEach((sel, i) => {
         sel.value = players[i].name;
-        if (nameViews[i]) {
-          nameViews[i].textContent = players[i].name;
-        }
+        if (nameViews[i]) nameViews[i].textContent = players[i].name;
       });
     }
 
@@ -713,8 +775,27 @@
       return 0;
     }
 
+    function updateSeatStyles() {
+      const dealerIdx = getDealerIndex();
+      const lowThreshold = (playerCount === 3) ? 18000 : 12000;
+
+      seats.forEach((seat, idx) => {
+        if (idx >= playerCount) {
+          seat.classList.remove("dealer-seat", "low-score");
+          return;
+        }
+
+        if (idx === dealerIdx) seat.classList.add("dealer-seat");
+        else seat.classList.remove("dealer-seat");
+
+        if (players[idx].score < lowThreshold) seat.classList.add("low-score");
+        else seat.classList.remove("low-score");
+      });
+    }
+
     function updatePlayerCount() {
       playerCount = parseInt(playerCountSelect.value, 10);
+
       seats.forEach((seat, idx) => {
         if (idx < playerCount) {
           seat.style.display = "flex";
@@ -730,48 +811,42 @@
         btn.style.display = idx < playerCount ? "flex" : "none";
       });
 
+      ronButtons.forEach(btn => {
+        const idx = parseInt(btn.dataset.index, 10);
+        btn.style.display = idx < playerCount ? "flex" : "none";
+      });
+
       const dealerIdx = getDealerIndex();
-      if (dealerIdx >= playerCount) {
-        dealerRadios[0].checked = true;
-      }
-      if (winnerIndex !== null && winnerIndex >= playerCount) {
-        winnerIndex = null;
-      }
+      if (dealerIdx >= playerCount) dealerRadios[0].checked = true;
+
+      if (winnerIndex !== null && winnerIndex >= playerCount) winnerIndex = null;
+      if (loserIndex !== null && loserIndex >= playerCount) loserIndex = null;
+
       clearWinnerHighlight();
 
       if (playerCount === 3) {
         let allActive25000 = true;
         for (let i = 0; i < 3; i++) {
-          if (players[i].score !== INITIAL_POINTS_FOUR) {
-            allActive25000 = false;
-            break;
-          }
+          if (players[i].score !== INITIAL_POINTS_FOUR) { allActive25000 = false; break; }
         }
         if (allActive25000) {
-          for (let i = 0; i < 3; i++) {
-            players[i].score = INITIAL_POINTS_THREE;
-          }
+          for (let i = 0; i < 3; i++) players[i].score = INITIAL_POINTS_THREE;
         }
       } else if (playerCount === 4) {
         let allActive35000 = true;
         for (let i = 0; i < 4; i++) {
-          if (players[i].score !== INITIAL_POINTS_THREE) {
-            allActive35000 = false;
-            break;
-          }
+          if (players[i].score !== INITIAL_POINTS_THREE) { allActive35000 = false; break; }
         }
         if (allActive35000) {
-          for (let i = 0; i < 4; i++) {
-            players[i].score = INITIAL_POINTS_FOUR;
-          }
+          for (let i = 0; i < 4; i++) players[i].score = INITIAL_POINTS_FOUR;
         }
       }
 
       renderScores();
       updateReachUI();
       updateWinnerText();
-      updateLoserOptions();
       updateScoreOptions();
+      updateSeatStyles();
     }
 
     function clearWinnerHighlight() {
@@ -781,51 +856,40 @@
     function setWinner(index) {
       if (index >= playerCount) return;
       winnerIndex = index;
+
       clearWinnerHighlight();
       seats.forEach(seat => {
-        if (parseInt(seat.dataset.index, 10) === index) {
-          seat.classList.add("winner");
-        }
+        if (parseInt(seat.dataset.index, 10) === index) seat.classList.add("winner");
       });
+
       updateWinnerText();
-      updateLoserOptions();
       updateScoreOptions();
     }
 
     function updateWinnerText() {
+      const dealerIdx = getDealerIndex();
+
+      if (mode === "ron") {
+        if (winnerIndex === null) {
+          winnerDisplay.textContent = "ロン：上がる人の「ロン」ボタンを押してください。";
+          return;
+        }
+        if (loserIndex === null) {
+          winnerDisplay.textContent =
+            `ロン：${players[winnerIndex].name} → 放銃者を卓からタップしてください（本場：${honbaCount}本 / リーチ棒：${reachSticks}本）`;
+          return;
+        }
+        winnerDisplay.textContent =
+          `ロン：${players[winnerIndex].name}（${dealerIdx === winnerIndex ? "親" : "子"}） / 放銃：${players[loserIndex].name} / 本場：${honbaCount}本 / リーチ棒：${reachSticks}本`;
+        return;
+      }
+
       if (winnerIndex === null) {
-        winnerDisplay.textContent = "上がったプレイヤーを卓からタップしてください。";
+        winnerDisplay.textContent = "ツモ：上がったプレイヤーを卓からタップしてください。 / ロンは各席の「ロン」ボタン";
       } else {
-        const dealerIdx = getDealerIndex();
         const isDealer = dealerIdx === winnerIndex;
         winnerDisplay.textContent =
-          `上がり：${players[winnerIndex].name}（${isDealer ? "親" : "子"}） / 本場：${honbaCount}本 / リーチ棒：${reachSticks}本`;
-      }
-    }
-
-    function getCurrentAgariType() {
-      let val = "tsumo";
-      agariTypeRadios.forEach(r => {
-        if (r.checked) val = r.value;
-      });
-      return val;
-    }
-
-    function updateLoserOptions() {
-      const agariType = getCurrentAgariType();
-      if (agariType === "ron" && winnerIndex !== null) {
-        loserField.style.display = "block";
-        loserSelect.innerHTML = "";
-        for (let i = 0; i < playerCount; i++) {
-          if (i === winnerIndex) continue;
-          const opt = document.createElement("option");
-          opt.value = i;
-          opt.textContent = players[i].name;
-          loserSelect.appendChild(opt);
-        }
-      } else {
-        loserField.style.display = "none";
-        loserSelect.innerHTML = "";
+          `ツモ：${players[winnerIndex].name}（${isDealer ? "親" : "子"}） / 本場：${honbaCount}本 / リーチ棒：${reachSticks}本`;
       }
     }
 
@@ -839,6 +903,7 @@
     function updateScoreOptions() {
       const list = getScoreListForWinner();
       scoreSelect.innerHTML = "";
+
       if (!list.length) {
         const opt = document.createElement("option");
         opt.value = "";
@@ -846,6 +911,7 @@
         scoreSelect.appendChild(opt);
         return;
       }
+
       const opt0 = document.createElement("option");
       opt0.value = "";
       opt0.textContent = "点数を選択してください";
@@ -854,27 +920,17 @@
       const dealerIdx = getDealerIndex();
       const isDealer = dealerIdx === winnerIndex;
 
-      if (!isDealer) {
-        const group = document.createElement("optgroup");
-        group.label = "子のあがり";
-        CHILD_SCORES.forEach(s => {
-          const opt = document.createElement("option");
-          opt.value = s.id;
-          opt.textContent = s.label;
-          group.appendChild(opt);
-        });
-        scoreSelect.appendChild(group);
-      } else {
-        const group = document.createElement("optgroup");
-        group.label = "親のあがり";
-        PARENT_SCORES.forEach(s => {
-          const opt = document.createElement("option");
-          opt.value = s.id;
-          opt.textContent = s.label;
-          group.appendChild(opt);
-        });
-        scoreSelect.appendChild(group);
-      }
+      const group = document.createElement("optgroup");
+      group.label = isDealer ? "親のあがり" : "子のあがり";
+
+      (isDealer ? PARENT_SCORES : CHILD_SCORES).forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = s.label;
+        group.appendChild(opt);
+      });
+
+      scoreSelect.appendChild(group);
     }
 
     function findScoreById(id) {
@@ -887,6 +943,7 @@
       for (let i = 0; i < 4; i++) {
         scoreElems[i].textContent = players[i].score;
       }
+      updateSeatStyles();
     }
 
     function addLog(text) {
@@ -900,26 +957,24 @@
       reachButtons.forEach(btn => {
         const idx = parseInt(btn.dataset.index, 10);
         const active = idx < playerCount && reachFlags[idx];
-        if (active) {
-          btn.classList.add("active-reach");
-        } else {
-          btn.classList.remove("active-reach");
-        }
+        if (active) btn.classList.add("active-reach");
+        else btn.classList.remove("active-reach");
         btn.style.display = idx < playerCount ? "flex" : "none";
       });
     }
 
     function applyScore() {
       if (winnerIndex === null) {
-        alert("先に上がりプレイヤーを卓からタップしてください。");
+        alert("先に上がりプレイヤーを選んでください。");
         return;
       }
+
       const scoreId = scoreSelect.value;
       if (!scoreId) {
         alert("点数を選択してください。");
         return;
       }
-      const agariType = getCurrentAgariType();
+
       const scoreInfo = findScoreById(scoreId);
       if (!scoreInfo) return;
 
@@ -932,23 +987,25 @@
 
       saveState();
 
-      if (agariType === "ron") {
-        const loserIdx = parseInt(loserSelect.value, 10);
-        if (isNaN(loserIdx)) {
-          alert("放銃者を選択してください。");
+      if (mode === "ron") {
+        if (loserIndex === null) {
+          alert("放銃者を卓からタップして選んでください。");
           history.pop();
           return;
         }
+
         const base = scoreInfo.ron;
         const delta = base + totalHonbaBonus;
-        players[winnerIndex].score += delta;
-        players[loserIdx].score -= delta;
 
-        let logText = `ロン：${players[winnerIndex].name} +${delta} / ${players[loserIdx].name} -${delta}（基本${base}`;
+        players[winnerIndex].score += delta;
+        players[loserIndex].score -= delta;
+
+        let logText = `ロン：${players[winnerIndex].name} +${delta} / ${players[loserIndex].name} -${delta}（基本${base}`;
         if (honbaCount > 0) logText += ` + 本場${honbaCount}本で${totalHonbaBonus}`;
         logText += "）";
         addLog(logText);
       } else {
+        // ツモ
         if (isDealerWin) {
           let gain = 0;
           for (let i = 0; i < playerCount; i++) {
@@ -968,12 +1025,7 @@
           let gain = 0;
           for (let i = 0; i < playerCount; i++) {
             if (i === winnerIndex) continue;
-            let basePay;
-            if (i === dealerIdx) {
-              basePay = scoreInfo.tsumoParent;
-            } else {
-              basePay = scoreInfo.tsumoChild;
-            }
+            let basePay = (i === dealerIdx) ? scoreInfo.tsumoParent : scoreInfo.tsumoChild;
             const pay = basePay + perPayerHonba;
             players[i].score -= pay;
             gain += pay;
@@ -987,7 +1039,7 @@
         }
       }
 
-      // リーチ棒回収
+      // リーチ棒回収（勝者が回収：ツモ/ロン共通）
       if (reachSticks > 0) {
         const pot = reachSticks * 1000;
         players[winnerIndex].score += pot;
@@ -996,6 +1048,10 @@
         reachFlags = reachFlags.map(() => false);
         updateReachUI();
       }
+
+      // ロン後はツモモードへ戻す
+      mode = "tsumo";
+      loserIndex = null;
 
       renderScores();
       updateWinnerText();
@@ -1023,54 +1079,63 @@
     }
 
     function applyRyuukyoku() {
-  const tenpaiIndices = [];
-  const cbs = tenpaiCheckboxesDiv.querySelectorAll("input[type='checkbox']");
-  cbs.forEach(cb => {
-    if (cb.checked) tenpaiIndices.push(parseInt(cb.value, 10));
-  });
+      const tenpaiIndices = [];
+      const cbs = tenpaiCheckboxesDiv.querySelectorAll("input[type='checkbox']");
+      cbs.forEach(cb => {
+        if (cb.checked) tenpaiIndices.push(parseInt(cb.value, 10));
+      });
 
-  if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
-    addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
-    closeRyuukyokuPanel();
-    return;
-  }
+      if (tenpaiIndices.length === 0 || tenpaiIndices.length === playerCount) {
+        addLog("流局：点数移動なし（全員ノーテン or 全員テンパイ）");
+        closeRyuukyokuPanel();
 
-  // 🔁 流局精算前に状態保存
-  saveState();
+        // 流局後はリーチ状態だけリセット（棒は場に残す）
+        reachFlags = reachFlags.map(() => false);
+        updateReachUI();
 
-  const total = 3000;
-  const nTenpai = tenpaiIndices.length;
-  const nNoten = playerCount - nTenpai;
+        mode = "tsumo";
+        loserIndex = null;
+        updateWinnerText();
+        return;
+      }
 
-  const gainPerTenpai = Math.floor(total / nTenpai);
-  const lossPerNoten = Math.floor(total / nNoten);
+      saveState();
 
-  const notenIndices = [];
-  for (let i = 0; i < playerCount; i++) {
-    if (!tenpaiIndices.includes(i)) notenIndices.push(i);
-  }
+      const total = 3000;
+      const nTenpai = tenpaiIndices.length;
+      const nNoten = playerCount - nTenpai;
 
-  tenpaiIndices.forEach(i => {
-    players[i].score += gainPerTenpai;
-  });
-  notenIndices.forEach(i => {
-    players[i].score -= lossPerNoten;
-  });
+      const gainPerTenpai = Math.floor(total / nTenpai);
+      const lossPerNoten = Math.floor(total / nNoten);
 
-  renderScores();
+      const notenIndices = [];
+      for (let i = 0; i < playerCount; i++) {
+        if (!tenpaiIndices.includes(i)) notenIndices.push(i);
+      }
 
-  const tenpaiNames = tenpaiIndices.map(i => players[i].name).join(" / ");
-  const notenNames = notenIndices.map(i => players[i].name).join(" / ");
-  addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
+      tenpaiIndices.forEach(i => {
+        players[i].score += gainPerTenpai;
+      });
+      notenIndices.forEach(i => {
+        players[i].score -= lossPerNoten;
+      });
 
-  // ★ 流局後はリーチ状態だけリセット（棒は場に残す）
-  reachFlags = reachFlags.map(() => false);
-  updateReachUI();
+      renderScores();
 
-  closeRyuukyokuPanel();
-  updateWinnerText();
-}
+      const tenpaiNames = tenpaiIndices.map(i => players[i].name).join(" / ");
+      const notenNames = notenIndices.map(i => players[i].name).join(" / ");
+      addLog(`流局：テンパイ → +${gainPerTenpai}（${tenpaiNames}） / ノーテン → -${lossPerNoten}（${notenNames}）`);
 
+      // 流局後はリーチ状態だけリセット（棒は場に残す）
+      reachFlags = reachFlags.map(() => false);
+      updateReachUI();
+
+      mode = "tsumo";
+      loserIndex = null;
+
+      closeRyuukyokuPanel();
+      updateWinnerText();
+    }
 
     function shuffleSeats() {
       saveState();
@@ -1087,6 +1152,7 @@
       const oldReach = reachFlags.slice();
       const oldDealer = getDealerIndex();
       const oldWinner = winnerIndex;
+      const oldLoser = loserIndex;
 
       for (let i = 0; i < playerCount; i++) {
         players[i] = { ...oldPlayers[indices[i]] };
@@ -1095,25 +1161,29 @@
 
       let newDealer = 0;
       for (let i = 0; i < playerCount; i++) {
-        if (indices[i] === oldDealer) {
-          newDealer = i;
-          break;
-        }
+        if (indices[i] === oldDealer) { newDealer = i; break; }
       }
+
       let newWinner = null;
       if (oldWinner !== null && oldWinner < playerCount) {
         for (let i = 0; i < playerCount; i++) {
-          if (indices[i] === oldWinner) {
-            newWinner = i;
-            break;
-          }
+          if (indices[i] === oldWinner) { newWinner = i; break; }
+        }
+      }
+
+      let newLoser = null;
+      if (oldLoser !== null && oldLoser < playerCount) {
+        for (let i = 0; i < playerCount; i++) {
+          if (indices[i] === oldLoser) { newLoser = i; break; }
         }
       }
 
       dealerRadios.forEach(r => r.checked = false);
       const dealerRadio = document.querySelector(`.seat[data-index="${newDealer}"] .dealer-radio`);
       if (dealerRadio) dealerRadio.checked = true;
+
       winnerIndex = newWinner;
+      loserIndex = newLoser;
 
       renderScores();
       clearWinnerHighlight();
@@ -1121,9 +1191,11 @@
         const seat = document.querySelector(`.seat[data-index="${winnerIndex}"]`);
         if (seat) seat.classList.add("winner");
       }
+
       refreshNamesFromPlayers();
       updateReachUI();
       updateWinnerText();
+      updateSeatStyles();
       addLog("席替えを実行");
     }
 
@@ -1142,20 +1214,36 @@
       clearWinnerHighlight();
       winnerIndex = null;
 
+      mode = "tsumo";
+      loserIndex = null;
+
       updateReachUI();
       renderScores();
       updateWinnerText();
       addLog("点数を初期値にリセット");
     }
 
-    // ▼ イベント設定
+    // ▼ 卓タップ：ツモはwinner選択 / ロンは放銃者選択
     seats.forEach(seat => {
       seat.addEventListener("click", () => {
         const idx = parseInt(seat.dataset.index, 10);
+        if (idx >= playerCount) return;
+
+        if (mode === "ron") {
+          if (winnerIndex === null) return;
+          if (idx === winnerIndex) return;
+
+          loserIndex = idx;
+          updateWinnerText();
+          updateScoreOptions();
+          return;
+        }
+
         setWinner(idx);
       });
     });
 
+    // 親変更：本場自動リセット + 虹色更新
     dealerRadios.forEach(radio => {
       const stop = (e) => e.stopPropagation();
       radio.addEventListener("click", stop);
@@ -1163,14 +1251,16 @@
       radio.addEventListener("mousedown", stop);
 
       radio.addEventListener("change", () => {
+        if (honbaCount !== 0) {
+          saveState();
+          honbaCount = 0;
+          honbaCountSpan.textContent = honbaCount;
+          addLog("親変更：本場をリセット");
+        }
+
         updateWinnerText();
         updateScoreOptions();
-      });
-    });
-
-    agariTypeRadios.forEach(radio => {
-      radio.addEventListener("change", () => {
-        updateLoserOptions();
+        updateSeatStyles();
       });
     });
 
@@ -1228,53 +1318,63 @@
       resetScores();
     });
 
-  // リーチボタン（もう一度押すとキャンセル）
-reachButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    const idx = parseInt(btn.dataset.index, 10);
-    if (idx >= playerCount) return;
+    // ロンボタン：ロンモードに入る → 放銃者は卓タップ
+    ronButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.index, 10);
+        if (idx >= playerCount) return;
 
-    // 押すたびに履歴を残す
-    saveState();
+        mode = "ron";
+        loserIndex = null;
+        setWinner(idx);
+        updateWinnerText();
+        updateScoreOptions();
+      });
+    });
 
-    // まだリーチしていない → リーチ宣言
-    if (!reachFlags[idx]) {
-      if (players[idx].score < 1000) {
-        alert("1000点未満のためリーチできません。");
-        // 保存した履歴を取り消す
-        history.pop();
-        return;
-      }
+    // リーチボタン（もう一度押すとキャンセル）
+    reachButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index, 10);
+        if (idx >= playerCount) return;
 
-      players[idx].score -= 1000;
-      reachFlags[idx] = true;
-      reachSticks += 1;
+        saveState();
 
-      addLog(`リーチ：${players[idx].name} -1000 / リーチ棒 ${reachSticks}本`);
-    } else {
-      // すでにリーチしている → 取り消し（+1000してリーチ棒−1）
-      players[idx].score += 1000;
-      reachFlags[idx] = false;
-      if (reachSticks > 0) reachSticks -= 1;
+        if (!reachFlags[idx]) {
+          if (players[idx].score < 1000) {
+            alert("1000点未満のためリーチできません。");
+            history.pop();
+            return;
+          }
 
-      addLog(`リーチ取り消し：${players[idx].name} +1000 / リーチ棒 ${reachSticks}本`);
-    }
+          players[idx].score -= 1000;
+          reachFlags[idx] = true;
+          reachSticks += 1;
 
-    renderScores();
-    updateReachUI();
-    updateWinnerText();
-  });
-});
+          addLog(`リーチ：${players[idx].name} -1000 / リーチ棒 ${reachSticks}本`);
+        } else {
+          players[idx].score += 1000;
+          reachFlags[idx] = false;
+          if (reachSticks > 0) reachSticks -= 1;
 
+          addLog(`リーチ取り消し：${players[idx].name} +1000 / リーチ棒 ${reachSticks}本`);
+        }
+
+        renderScores();
+        updateReachUI();
+        updateWinnerText();
+      });
+    });
 
     // 初期化
     initPlayers();
     initNameSelects();
     updatePlayerCount();
     updateWinnerText();
-    updateLoserOptions();
     updateScoreOptions();
     updateReachUI();
+    updateSeatStyles();
   </script>
 </body>
 </html>
