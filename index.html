@@ -979,14 +979,15 @@
 
       renderScores();
       updateWinnerText();
-
-      // ★ 親あがりなら本場＋1
-      const dealerIdx = getDealerIndex();
-      if (winnerIndex === dealerIdx) {
+      
+      // ★ 親あがりなら本場＋1（isDealerWin を使う）
+      if (isDealerWin) {
         honbaCount++;
         honbaCountSpan.textContent = honbaCount;
         addLog("親あがり：本場 +1");
+        updateWinnerText(); // 本場表示も更新したいので
       }
+
 
     }
 
